@@ -16,11 +16,11 @@ import (
 // 新建 dtls.Conn
 func dtlsChannel(cSess *session.ConnSession) {
     var (
-        conn  *dtls.Conn
-        dSess *session.DtlsSession
-        err   error
-        n     int
-        dead  = time.Duration(cSess.DTLSDpdTime+5) * time.Second
+        conn          *dtls.Conn
+        dSess         *session.DtlsSession
+        err           error
+        bytesReceived int
+        dead          = time.Duration(cSess.DTLSDpdTime+5) * time.Second
     )
     defer func() {
         base.Info("dtls channel exit")
@@ -72,8 +72,8 @@ func dtlsChannel(cSess *session.ConnSession) {
             cSess.ResetDTLSReadDead.Store(false)
         }
 
-        pl := getPayloadBuffer()    // 从池子申请一块内存，存放去除头部的数据包到 PayloadIn，在 payloadInToTun 中释放
-        n, err = conn.Read(pl.Data) // 服务器没有数据返回时，会阻塞
+        pl := getPayloadBuffer()                // 从池子申请一块内存，存放去除头部的数据包到 PayloadIn，在 payloadInToTun 中释放
+        bytesReceived, err = conn.Read(pl.Data) // 服务器没有数据返回时，会阻塞
         if err != nil {
             base.Error("dtls server to payloadIn error:", err)
             return
@@ -98,13 +98,14 @@ func dtlsChannel(cSess *session.ConnSession) {
         case 0x04:
             //base.Debug("dtls receive DPD-RESP")
         case 0x00: // DATA
-            pl.Data = append(pl.Data[:0], pl.Data[1:n]...)
+            pl.Data = append(pl.Data[:0], pl.Data[1:bytesReceived]...)
             select {
             case cSess.PayloadIn <- pl:
             case <-dSess.CloseChan:
                 return
             }
         }
+        cSess.Stat.BytesReceived += uint64(bytesReceived)
     }
 }
 
@@ -117,8 +118,9 @@ func payloadOutDTLSToServer(conn *dtls.Conn, dSess *session.DtlsSession, cSess *
     }()
 
     var (
-        err error
-        pl  *proto.Payload
+        err       error
+        bytesSent int
+        pl        *proto.Payload
     )
 
     for {
@@ -143,11 +145,12 @@ func payloadOutDTLSToServer(conn *dtls.Conn, dSess *session.DtlsSession, cSess *
             pl.Data = append(pl.Data[:0], pl.PType)
         }
 
-        _, err = conn.Write(pl.Data)
+        bytesSent, err = conn.Write(pl.Data)
         if err != nil {
             base.Error("dtls payloadOut to server error:", err)
             return
         }
+        cSess.Stat.BytesSent += uint64(bytesSent)
 
         // 释放由 tunToPayloadOut 申请的内存
         putPayloadBuffer(pl)

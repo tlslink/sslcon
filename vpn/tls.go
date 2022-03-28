@@ -20,9 +20,10 @@ func tlsChannel(conn *tls.Conn, bufR *bufio.Reader, cSess *session.ConnSession, 
         cSess.Close()
     }()
     var (
-        err     error
-        dataLen uint16
-        dead    = time.Duration(cSess.TLSDpdTime+5) * time.Second
+        err           error
+        bytesReceived int
+        dataLen       uint16
+        dead          = time.Duration(cSess.TLSDpdTime+5) * time.Second
     )
 
     go payloadOutTLSToServer(conn, cSess)
@@ -36,8 +37,8 @@ func tlsChannel(conn *tls.Conn, bufR *bufio.Reader, cSess *session.ConnSession, 
             cSess.ResetTLSReadDead.Store(false)
         }
 
-        pl := getPayloadBuffer()    // 从池子申请一块内存，存放去除头部的数据包到 PayloadIn，在 payloadInToTun 中释放
-        _, err = bufR.Read(pl.Data) // 服务器没有数据返回时，会阻塞
+        pl := getPayloadBuffer()                // 从池子申请一块内存，存放去除头部的数据包到 PayloadIn，在 payloadInToTun 中释放
+        bytesReceived, err = bufR.Read(pl.Data) // 服务器没有数据返回时，会阻塞
         if err != nil {
             base.Error("tls server to payloadIn error:", err)
             return
@@ -75,6 +76,7 @@ func tlsChannel(conn *tls.Conn, bufR *bufio.Reader, cSess *session.ConnSession, 
                 return
             }
         }
+        cSess.Stat.BytesReceived += uint64(bytesReceived)
     }
 }
 
@@ -87,8 +89,9 @@ func payloadOutTLSToServer(conn *tls.Conn, cSess *session.ConnSession) {
     }()
 
     var (
-        err error
-        pl  *proto.Payload
+        err       error
+        bytesSent int
+        pl        *proto.Payload
     )
 
     for {
@@ -116,11 +119,12 @@ func payloadOutTLSToServer(conn *tls.Conn, cSess *session.ConnSession) {
             pl.Data[6] = pl.PType
         }
         //base.Debug(pl.PType)
-        _, err = conn.Write(pl.Data)
+        bytesSent, err = conn.Write(pl.Data)
         if err != nil {
             base.Error("tls payloadOut to server error:", err)
             return
         }
+        cSess.Stat.BytesSent += uint64(bytesSent)
 
         // 释放由 tunToPayloadOut 申请的内存
         putPayloadBuffer(pl)

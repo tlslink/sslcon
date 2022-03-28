@@ -21,6 +21,7 @@ const (
     RECONNECT
     INTERFACE
     ABORT
+    STAT
 )
 
 var (
@@ -71,8 +72,15 @@ func rpc(resp http.ResponseWriter, req *http.Request) {
 func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) {
     // request route
     switch req.ID.Num {
+    case STAT:
+        if session.Sess.Connected {
+            _ = conn.Reply(ctx, req.ID, session.Sess.CSess.Stat)
+            return
+        }
+        jError := jsonrpc2.Error{Code: 1, Message: disconnectedStr}
+        _ = conn.ReplyWithError(ctx, req.ID, &jError)
     case STATUS:
-        // 无论 DTLS 隧道是否建立成功，直到有个结果，无结果就等待，不关心是否建立成功
+        // 等待 DTLS 隧道创建过程结束，无论隧道是否建立成功
         <-session.Sess.CSess.DtlsSetupChan
         if session.Sess.Connected {
             _ = conn.Reply(ctx, req.ID, session.Sess.CSess)

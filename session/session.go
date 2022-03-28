@@ -25,9 +25,14 @@ type Session struct {
     CSess       *ConnSession
 }
 
+type stat struct {
+    // be sure to use the double type when parsing
+    BytesSent     uint64 `json:"bytesSent"`
+    BytesReceived uint64 `json:"bytesReceived"`
+}
+
 // ConnSession used for both TLS and DTLS
 type ConnSession struct {
-    //Sess              *Session
     ServerAddress     string
     LocalAddress      string
     Hostname          string
@@ -46,6 +51,7 @@ type ConnSession struct {
     DTLSKeepaliveTime int
     DTLSId            string `json:"-"` // used by the server to associate the DTLS channel with the CSTP channel
     DTLSCipherSuite   string
+    Stat              *stat
 
     closeOnce      sync.Once           `json:"-"`
     CloseChan      chan struct{}       `json:"-"`
@@ -69,6 +75,7 @@ type DtlsSession struct {
 func (sess *Session) NewConnSession(header *http.Header) *ConnSession {
     cSess := &ConnSession{
         LocalAddress:   base.LocalInterface.Ip4,
+        Stat:           &stat{0, 0},
         closeOnce:      sync.Once{},
         CloseChan:      make(chan struct{}),
         DtlsSetupChan:  make(chan struct{}),
