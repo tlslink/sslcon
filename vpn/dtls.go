@@ -96,7 +96,7 @@ func dtlsChannel(cSess *session.ConnSession) {
             case <-dSess.CloseChan:
             }
         case 0x04:
-            //base.Debug("dtls receive DPD-RESP")
+            base.Debug("dtls receive DPD-RESP")
         case 0x00: // DATA
             pl.Data = append(pl.Data[:0], pl.Data[1:bytesReceived]...)
             select {

@@ -159,7 +159,7 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
         auth.Prof.Initialized = true
         _ = conn.Reply(ctx, req.ID, "ready to connect")
     default:
-        // base.Debug("rpc receive:", req)
+        base.Debug("receive rpc call:", req)
         jError := jsonrpc2.Error{Code: 1, Message: "unknown method: " + req.Method}
         _ = conn.ReplyWithError(ctx, req.ID, &jError)
     }

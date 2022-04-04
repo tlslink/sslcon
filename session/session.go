@@ -127,8 +127,8 @@ func (cSess *ConnSession) DPDTimer() {
         defer func() {
             base.Info("dead peer detection timer exit")
         }()
-        //base.Debug("TLSDpdTime:", cSess.TLSDpdTime, "TLSKeepaliveTime", cSess.TLSKeepaliveTime,
-        //    "DTLSDpdTime", cSess.DTLSDpdTime, "DTLSKeepaliveTime", cSess.DTLSKeepaliveTime)
+        base.Debug("TLSDpdTime:", cSess.TLSDpdTime, "TLSKeepaliveTime", cSess.TLSKeepaliveTime,
+            "DTLSDpdTime", cSess.DTLSDpdTime, "DTLSKeepaliveTime", cSess.DTLSKeepaliveTime)
         // 简化处理，最小15秒检测一次,至少5秒冗余
         dpdTime := utils.Min(cSess.TLSDpdTime, cSess.DTLSDpdTime) - 5
         if dpdTime < 10 {
@@ -172,9 +172,9 @@ func (cSess *ConnSession) ReadDeadTimer() {
         defer func() {
             base.Info("read dead timer exit")
         }()
-        // 最小每隔 5 秒才会重置，避免每次 for 循环都重置超时时间
+        // 避免每次 for 循环都重置读超时的时间
         // 这里是绝对时间，至于链接本身，服务器没有数据时 conn.Read 会阻塞，有数据时会不断判断
-        tick := time.NewTicker(5 * time.Second)
+        tick := time.NewTicker(4 * time.Second)
         for range tick.C {
             select {
             case <-cSess.CloseChan:

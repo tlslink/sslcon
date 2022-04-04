@@ -61,7 +61,7 @@ func tlsChannel(conn *tls.Conn, bufR *bufio.Reader, cSess *session.ConnSession, 
                 return
             }
         case 0x04:
-            //base.Debug("tls receive DPD-RESP")
+            base.Debug("tls receive DPD-RESP")
         case 0x00: // DATA
             // 获取数据长度
             dataLen = binary.BigEndian.Uint16(pl.Data[4:6])
