@@ -3,15 +3,15 @@ package vpn
 import (
 	"bytes"
 	"crypto/tls"
-	"dtlslink/auth"
-	"dtlslink/base"
-	"dtlslink/session"
-	"dtlslink/utils"
 	"encoding/hex"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
+	"vpnagent/auth"
+	"vpnagent/base"
+	"vpnagent/session"
+	"vpnagent/utils"
 )
 
 var (

@@ -1,11 +1,11 @@
 package vpn
 
 import (
-	"dtlslink/base"
-	"dtlslink/proto"
-	"dtlslink/session"
-	"dtlslink/utils"
 	"github.com/songgao/water"
+	"vpnagent/base"
+	"vpnagent/proto"
+	"vpnagent/session"
+	"vpnagent/utils"
 )
 
 func setupTun(cSess *session.ConnSession) error {

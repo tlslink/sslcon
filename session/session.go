@@ -1,14 +1,14 @@
 package session
 
 import (
-	"dtlslink/base"
-	"dtlslink/proto"
-	"dtlslink/utils"
 	"net/http"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
+	"vpnagent/base"
+	"vpnagent/proto"
+	"vpnagent/utils"
 )
 
 var (

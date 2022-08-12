@@ -3,12 +3,12 @@ package vpn
 import (
 	"bufio"
 	"crypto/tls"
-	"dtlslink/base"
-	"dtlslink/proto"
-	"dtlslink/session"
 	"encoding/binary"
 	"net/http"
 	"time"
+	"vpnagent/base"
+	"vpnagent/proto"
+	"vpnagent/session"
 )
 
 // 复用已有的 tls.Conn 和对应的 bufR

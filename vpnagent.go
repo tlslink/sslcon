@@ -1,11 +1,11 @@
 package main
 
 import (
-	"dtlslink/base"
-	"dtlslink/rpc"
 	"os"
 	"os/signal"
 	"syscall"
+	"vpnagent/base"
+	"vpnagent/rpc"
 )
 
 func main() {

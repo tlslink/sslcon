@@ -1,4 +1,4 @@
-module dtlslink
+module vpnagent
 
 go 1.19
 

@@ -1,11 +1,11 @@
 package rpc
 
 import (
-	"dtlslink/auth"
-	"dtlslink/session"
-	"dtlslink/utils"
-	"dtlslink/vpn"
 	"strings"
+	"vpnagent/auth"
+	"vpnagent/session"
+	"vpnagent/utils"
+	"vpnagent/vpn"
 )
 
 // Connect 调用之前必须由前端填充 auth.Prof，建议填充 base.Interface

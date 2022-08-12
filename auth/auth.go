@@ -4,9 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/tls"
-	"dtlslink/base"
-	"dtlslink/session"
-	"dtlslink/utils"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -15,6 +12,9 @@ import (
 	"net/http"
 	"strings"
 	"text/template"
+	"vpnagent/base"
+	"vpnagent/session"
+	"vpnagent/utils"
 )
 
 var (

@@ -2,15 +2,15 @@ package rpc
 
 import (
 	"context"
-	"dtlslink/auth"
-	"dtlslink/base"
-	"dtlslink/session"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/sourcegraph/jsonrpc2"
 	ws "github.com/sourcegraph/jsonrpc2/websocket"
 	"net/http"
+	"vpnagent/auth"
+	"vpnagent/base"
+	"vpnagent/session"
 )
 
 const (

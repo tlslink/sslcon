@@ -1,12 +1,12 @@
 package utils
 
 import (
-	"dtlslink/base"
 	"errors"
 	"fmt"
 	"net"
 	"os/exec"
 	"strings"
+	"vpnagent/base"
 )
 
 func ConfigInterface(TunName, VPNAddress, VPNMask, ServerIP string, MTU int, DNS, SplitInclude, SplitExclude []string) error {

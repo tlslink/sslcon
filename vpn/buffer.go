@@ -1,8 +1,8 @@
 package vpn
 
 import (
-	"dtlslink/proto"
 	"sync"
+	"vpnagent/proto"
 )
 
 const BufferSize = 2048
