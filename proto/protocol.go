@@ -4,15 +4,15 @@ package proto
 // 只用于 tls 数据包，dtls 数据包只有第 6 个字节
 
 var Header = []byte{
-	0x53, 0x54, 0x46, 0x01, // fixed to 0x53 (S) 0x54 (T) 0x46 (F) 0x01
-	0x00, 0x00, // The length of the packet that follows this header in big endian order
-	0x00, // The type of the payload that follows
-	0x00, // fixed to 0x00
+    0x53, 0x54, 0x46, 0x01, // fixed to 0x53 (S) 0x54 (T) 0x46 (F) 0x01
+    0x00, 0x00, // The length of the packet that follows this header in big endian order
+    0x00, // The type of the payload that follows
+    0x00, // fixed to 0x00
 }
 
 type Payload struct {
-	PType byte // The available payload types are listed in Table 3
-	Data  []byte
+    PType byte // The available payload types are listed in Table 3
+    Data  []byte
 }
 
 // https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-03#section-2.2

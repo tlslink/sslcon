@@ -1,12 +1,13 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="go build vpnagent.go" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
-    <module name="vpnagent" />
-    <working_directory value="$PROJECT_DIR$" />
-    <go_parameters value="-o vpnagent" />
-    <sudo value="true" />
-    <kind value="FILE" />
-    <directory value="$PROJECT_DIR$" />
-    <filePath value="$PROJECT_DIR$/vpnagent.go" />
-    <method v="2" />
-  </configuration>
+    <configuration default="false" name="go build vpnagent.go" type="GoApplicationRunConfiguration"
+                   factoryName="Go Application" nameIsGenerated="true">
+        <module name="vpnagent"/>
+        <working_directory value="$PROJECT_DIR$"/>
+        <go_parameters value="-o vpnagent"/>
+        <sudo value="true"/>
+        <kind value="FILE"/>
+        <directory value="$PROJECT_DIR$"/>
+        <filePath value="$PROJECT_DIR$/vpnagent.go"/>
+        <method v="2"/>
+    </configuration>
 </component>

@@ -2,10 +2,16 @@
   <code_scheme name="Project" version="173">
     <GoCodeStyleSettings>
       <option name="ADD_LEADING_SPACE_TO_COMMENTS" value="true" />
+      <option name="RUN_GO_FMT_ON_REFORMAT" value="false" />
       <option name="LOCAL_PACKAGE_PREFIXES" />
     </GoCodeStyleSettings>
     <MarkdownNavigatorCodeStyleSettings>
       <option name="RIGHT_MARGIN" value="72" />
     </MarkdownNavigatorCodeStyleSettings>
+    <codeStyleSettings language="go">
+      <indentOptions>
+        <option name="USE_TAB_CHARACTER" value="false" />
+      </indentOptions>
+    </codeStyleSettings>
   </code_scheme>
 </component>
