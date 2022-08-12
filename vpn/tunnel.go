@@ -39,12 +39,14 @@ func initTunnel() {
 	// Legacy Establishment of Secondary UDP Channel https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-02#section-2.1.5.1
 	// worker-vpn.c WSPCONFIG(ws)->udp_port != 0 && req->master_secret_set != 0 否则 disabling UDP (DTLS) connection
 	// 如果开启 dtls_psk（默认开启，见配置说明） 且 CipherSuite 包含 PSK-NEGOTIATE（仅限ocserv），worker-http.c 自动设置 req->master_secret_set = 1
-	// 此时无需手动设置 Secret，直接建立 dtls 链接，会自动协商，AnyConnect 客户端不支持
+	// 此时无需手动设置 Secret，会自动协商建立 dtls 链接，AnyConnect 客户端不支持
 	session.Sess.PreMasterSecret, _ = utils.MakeMasterSecret()
 	reqHeaders["X-DTLS-Master-Secret"] = hex.EncodeToString(session.Sess.PreMasterSecret) // A hex encoded pre-master secret to be used in the legacy DTLS session negotiation
 
+	// https://gitlab.com/openconnect/ocserv/-/blob/master/src/worker-http.c#L150
+	// https://github.com/openconnect/openconnect/blob/master/gnutls-dtls.c#L75
 	// worker-http.c dtls_ciphersuite_st ciphersuites12[]   仅支持两种，AES128-GCM-SHA256 和 AES256-GCM-SHA384
-	// AES128-GCM-SHA256 返回的 ID 为 0x009c，但 ECDHE-ECDSA-AES128-GCM-SHA256 可以正常解密
+	// AES128-GCM-SHA256 返回的 ID 为 0x009c，因此判断为 0x00,0x9C	TLS_RSA_WITH_AES_128_GCM_SHA256
 	// https://www.rfc-editor.org/rfc/rfc5288.html or https://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-4
 	// 冒号分隔，对于 ocserv，如果设置 PSK-NEGOTIATE，这里无效，我们目前不支持 PSK
 	reqHeaders["X-DTLS12-CipherSuite"] = "ECDHE-ECDSA-AES128-GCM-SHA256:AES128-GCM-SHA256"

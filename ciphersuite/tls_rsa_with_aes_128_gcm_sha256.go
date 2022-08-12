@@ -5,24 +5,23 @@ import (
 	"errors"
 	"fmt"
 	"github.com/pion/dtls/v2"
+	"github.com/pion/dtls/v2/pkg/protocol"
+	"hash"
+	"sync/atomic"
+
 	"github.com/pion/dtls/v2/pkg/crypto/ciphersuite"
 	"github.com/pion/dtls/v2/pkg/crypto/clientcertificate"
 	"github.com/pion/dtls/v2/pkg/crypto/prf"
-	"github.com/pion/dtls/v2/pkg/protocol"
 	"github.com/pion/dtls/v2/pkg/protocol/recordlayer"
-	"hash"
-	"sync/atomic"
 )
 
 const (
 	TLS_RSA_WITH_AES_128_GCM_SHA256 dtls.CipherSuiteID = 0x009c
 )
 
-// TLSEcdheEcdsaWithAes128GcmSha256
-var errCipherSuiteNotInit = &protocol.TemporaryError{Err: errors.New("CipherSuite has not been initialized")} //nolint:goerr113
+var errCipherSuiteNotInit = &protocol.TemporaryError{Err: errors.New("CipherSuite has not been initialized")}
 
-// TLSRsaWithAes128GcmSha256 copy from tls_ecdhe_ecdsa_with_aes_128_gcm_sha256.go
-// represents a TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 CipherSuite
+// TLSRsaWithAes128GcmSha256  represents a TLS_RSA_WITH_AES_128_GCM_SHA256 CipherSuite
 type TLSRsaWithAes128GcmSha256 struct {
 	gcm atomic.Value // *cryptoGCM
 }
@@ -32,13 +31,23 @@ func (c *TLSRsaWithAes128GcmSha256) CertificateType() clientcertificate.Type {
 	return clientcertificate.ECDSASign
 }
 
+// KeyExchangeAlgorithm controls what key exchange algorithm is using during the handshake
+func (c *TLSRsaWithAes128GcmSha256) KeyExchangeAlgorithm() dtls.CipherSuiteKeyExchangeAlgorithm {
+	return dtls.CipherSuiteKeyExchangeAlgorithmNone
+}
+
+// ECC uses Elliptic Curve Cryptography
+func (c *TLSRsaWithAes128GcmSha256) ECC() bool {
+	return false
+}
+
 // ID returns the ID of the CipherSuite
 func (c *TLSRsaWithAes128GcmSha256) ID() dtls.CipherSuiteID {
 	return TLS_RSA_WITH_AES_128_GCM_SHA256
 }
 
 func (c *TLSRsaWithAes128GcmSha256) String() string {
-	return "TLS_RSA_WITH_AES_128_GCM_SHA256"
+	return "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
 }
 
 // HashFunc returns the hashing func for this CipherSuite
@@ -86,20 +95,20 @@ func (c *TLSRsaWithAes128GcmSha256) Init(masterSecret, clientRandom, serverRando
 
 // Encrypt encrypts a single TLS RecordLayer
 func (c *TLSRsaWithAes128GcmSha256) Encrypt(pkt *recordlayer.RecordLayer, raw []byte) ([]byte, error) {
-	gcm := c.gcm.Load()
-	if gcm == nil {
+	cipherSuite, ok := c.gcm.Load().(*ciphersuite.GCM)
+	if !ok {
 		return nil, fmt.Errorf("%w, unable to encrypt", errCipherSuiteNotInit)
 	}
 
-	return gcm.(*ciphersuite.GCM).Encrypt(pkt, raw)
+	return cipherSuite.Encrypt(pkt, raw)
 }
 
 // Decrypt decrypts a single TLS RecordLayer
 func (c *TLSRsaWithAes128GcmSha256) Decrypt(raw []byte) ([]byte, error) {
-	gcm := c.gcm.Load()
-	if gcm == nil {
+	cipherSuite, ok := c.gcm.Load().(*ciphersuite.GCM)
+	if !ok {
 		return nil, fmt.Errorf("%w, unable to decrypt", errCipherSuiteNotInit)
 	}
 
-	return gcm.(*ciphersuite.GCM).Decrypt(raw)
+	return cipherSuite.Decrypt(raw)
 }
