@@ -24,7 +24,7 @@ var (
     baseLevel  int
     levels     map[int]string
 
-    logName = "dtlslink.log"
+    logName = "vpnagent.log"
 )
 
 type logWriter struct {
