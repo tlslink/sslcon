@@ -1,6 +1,6 @@
 package base
 
 const (
-    AppName    = "DtlsLink"
-    AppVersion = "0.1"
+    AgentName    = "AnyLink Secure Client"
+    AgentVersion = "0.1"
 )
