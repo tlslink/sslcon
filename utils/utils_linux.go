@@ -9,9 +9,9 @@ import (
     "vpnagent/base"
 )
 
-func ConfigInterface(TunName, VPNAddress, VPNMask, ServerIP string, MTU int, DNS, SplitInclude, SplitExclude []string) error {
+func ConfigInterface(TunName, VPNAddress, VPNMask, ServerIP string, DNS, SplitInclude, SplitExclude []string) error {
     // base.Debug(*base.LocalInterface)
-    cmdStr1 := fmt.Sprintf("ip link set dev %s up mtu %d multicast off", TunName, MTU)
+    cmdStr1 := fmt.Sprintf("ip link set dev %s up multicast off", TunName)
     cmdStr2 := fmt.Sprintf("ip addr add dev %s %s", TunName, IpMask2CIDR(VPNAddress, VPNMask))
 
     cmdStr3 := fmt.Sprintf("ip route add default dev %s", TunName)
