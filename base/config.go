@@ -1,9 +1,5 @@
 package base
 
-import (
-    "runtime"
-)
-
 var (
     Cfg            = &ClientConfig{}
     LocalInterface = &Interface{}
@@ -15,7 +11,6 @@ type ClientConfig struct {
     InsecureSkipVerify bool   `json:"skip_verify"`
     AllowLAN           bool   `json:"allow_lan"`
     CiscoCompat        bool   `json:"cisco_compat"`
-    OS                 string
 }
 
 // Interface 应该由外部接口设置
@@ -31,6 +26,4 @@ func initCfg() {
     Cfg.InsecureSkipVerify = true
     Cfg.AllowLAN = true
     Cfg.CiscoCompat = true
-
-    Cfg.OS = runtime.GOOS
 }
