@@ -2,7 +2,7 @@
  *
  * Copyright (C) 2017-2023 WireGuard LLC. All Rights Reserved.
  */
-
+// copy from https://git.zx2c4.com/wireguard-go/tree/tun/tun.go?h=0.0.20230223
 package tun
 
 import (

@@ -1,6 +1,7 @@
 package vpn
 
 import (
+    "fmt"
     "runtime"
     "vpnagent/base"
     "vpnagent/proto"
@@ -23,7 +24,7 @@ func setupTun(cSess *session.ConnSession) error {
     base.Debug("tun device:", cSess.TunName)
 
     tun.NativeTunDevice = dev.(*tun.NativeTun)
-    err = utils.ConfigInterface(cSess.VPNAddress, cSess.VPNMask, cSess.ServerAddress, cSess.DNS,
+    err = utils.ConfigInterface(cSess.TunName, cSess.VPNAddress, cSess.VPNMask, cSess.ServerAddress, cSess.DNS,
         cSess.SplitInclude, cSess.SplitExclude)
     if err != nil {
         _ = dev.Close()
@@ -63,12 +64,12 @@ func tunToPayloadOut(dev tun.Device, cSess *session.ConnSession) {
         pl.Data = (pl.Data)[:n]
 
         // base.Debug("tunToPayloadOut")
-        // if base.Cfg.LogLevel == "Debug" {
-        //    src, srcPort, dst, dstPort := utils.ResolvePacket(pl.Data)
-        //    //if ip_src.String() == "192.168.1.2" {
-        //    fmt.Println("client from", src, srcPort, "request target", dst, dstPort)
-        //    //}
-        // }
+        if base.Cfg.LogLevel == "Debug" {
+            src, srcPort, dst, dstPort := utils.ResolvePacket(pl.Data)
+            if dst == "42.192.84.227" {
+                fmt.Println("client from", src, srcPort, "request target", dst, dstPort)
+            }
+        }
 
         dSess := cSess.DtlsSession
         if dSess != nil {
@@ -117,12 +118,12 @@ func payloadInToTun(dev tun.Device, cSess *session.ConnSession) {
         }
 
         // base.Debug("payloadInToTun")
-        // if base.Cfg.LogLevel == "Debug" {
-        //    src, srcPort, dst, dstPort := utils.ResolvePacket(pl.Data)
-        //    //if ip_dst.String() == "192.168.1.2" {
-        //    fmt.Println("target from", src, srcPort, "response to client", dst, dstPort)
-        //    //}
-        // }
+        if base.Cfg.LogLevel == "Debug" {
+            src, srcPort, dst, dstPort := utils.ResolvePacket(pl.Data)
+            if src == "42.192.84.227" {
+                fmt.Println("target from", src, srcPort, "response to client", dst, dstPort)
+            }
+        }
 
         // 释放由 serverToPayloadIn 申请的内存
         putPayloadBuffer(pl)

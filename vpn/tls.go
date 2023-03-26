@@ -44,7 +44,7 @@ func tlsChannel(conn *tls.Conn, bufR *bufio.Reader, cSess *session.ConnSession, 
             return
         }
 
-        // base.Debug("tls server to payloadIn")
+        // base.Debug("tls server to payloadIn", "PType", pl.Data[6])
         // https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-03#section-2.2
         switch pl.Data[6] {
         case 0x07: // KEEPALIVE
@@ -63,6 +63,7 @@ func tlsChannel(conn *tls.Conn, bufR *bufio.Reader, cSess *session.ConnSession, 
         case 0x04:
             base.Debug("tls receive DPD-RESP")
         case 0x00: // DATA
+            // base.Debug("tls receive DATA")
             // 获取数据长度
             dataLen = binary.BigEndian.Uint16(pl.Data[4:6])
             // 去除数据头
@@ -101,7 +102,7 @@ func payloadOutTLSToServer(conn *tls.Conn, cSess *session.ConnSession) {
             return
         }
 
-        // base.Debug("tls payloadOut to server")
+        // base.Debug("tls payloadOut to server", "PType", pl.PType)
         if pl.PType == 0x00 {
             // 获取数据长度
             l := len(pl.Data)
@@ -118,7 +119,6 @@ func payloadOutTLSToServer(conn *tls.Conn, cSess *session.ConnSession) {
             // 设置头类型
             pl.Data[6] = pl.PType
         }
-        // base.Debug(pl.PType)
         bytesSent, err = conn.Write(pl.Data)
         if err != nil {
             base.Error("tls payloadOut to server error:", err)

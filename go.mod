@@ -9,8 +9,6 @@ require (
 	github.com/sourcegraph/jsonrpc2 v0.2.0
 	golang.org/x/net v0.7.0
 	golang.org/x/sys v0.5.1-0.20230222185716-a3b23cc77e89
-	golang.zx2c4.com/wintun v0.0.0-20211104114900-415007cec224
-	golang.zx2c4.com/wireguard v0.0.0-20230223181233-21636207a675
 	golang.zx2c4.com/wireguard/windows v0.5.3
 )
 
@@ -20,3 +18,5 @@ require (
 	github.com/pion/udp/v2 v2.0.1 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
 )
+
+//replace golang.zx2c4.com/wintun => ./wintun

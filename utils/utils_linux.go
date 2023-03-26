@@ -7,16 +7,14 @@ import (
     "os/exec"
     "strings"
     "vpnagent/base"
-    "vpnagent/tun"
 )
 
-func ConfigInterface(VPNAddress, VPNMask, ServerIP string, DNS, SplitInclude, SplitExclude []string) error {
+func ConfigInterface(TunName, VPNAddress, VPNMask, ServerIP string, DNS, SplitInclude, SplitExclude []string) error {
     // base.Debug(*base.LocalInterface)
-    tunName, _ := tun.NativeTunDevice.Name()
-    cmdStr1 := fmt.Sprintf("ip link set dev %s up multicast off", tunName)
-    cmdStr2 := fmt.Sprintf("ip addr add dev %s %s", tunName, IpMask2CIDR(VPNAddress, VPNMask))
+    cmdStr1 := fmt.Sprintf("ip link set dev %s up multicast off", TunName)
+    cmdStr2 := fmt.Sprintf("ip addr add dev %s %s", TunName, IpMask2CIDR(VPNAddress, VPNMask))
 
-    cmdStr3 := fmt.Sprintf("ip route add default dev %s", tunName)
+    cmdStr3 := fmt.Sprintf("ip route add default dev %s", TunName)
     cmdStr4 := fmt.Sprintf("ip route add %s/32 via %s dev %s", ServerIP, base.LocalInterface.Gateway, base.LocalInterface.Name)
 
     err := execCmd([]string{cmdStr1, cmdStr2, cmdStr3, cmdStr4})
@@ -26,7 +24,7 @@ func ConfigInterface(VPNAddress, VPNMask, ServerIP string, DNS, SplitInclude, Sp
 
     if len(SplitInclude) != 0 {
         for _, ipMask := range SplitInclude {
-            cmdStr := fmt.Sprintf("ip route add %s dev %s", IpMaskToCIDR(ipMask), tunName)
+            cmdStr := fmt.Sprintf("ip route add %s dev %s", IpMaskToCIDR(ipMask), TunName)
             _ = execCmd([]string{cmdStr})
         }
     } else if len(SplitExclude) != 0 {

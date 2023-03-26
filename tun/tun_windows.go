@@ -2,21 +2,19 @@
  *
  * Copyright (C) 2017-2023 WireGuard LLC. All Rights Reserved.
  */
-
+// copy from https://git.zx2c4.com/wireguard-go/tree/tun/tun_windows.go?h=0.0.20230223
 package tun
 
 import (
     "errors"
     "fmt"
+    "golang.org/x/sys/windows"
     "os"
     "sync"
     "sync/atomic"
     "time"
     _ "unsafe"
-
-    "golang.org/x/sys/windows"
-
-    "golang.zx2c4.com/wintun"
+    "vpnagent/tun/wintun"
 )
 
 const (
