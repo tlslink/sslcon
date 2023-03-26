@@ -34,7 +34,7 @@ func ConfigInterface(TunName, VPNAddress, VPNMask, ServerIP string, DNS, SplitIn
 
     // routes
     targetDefault, _ := netip.ParsePrefix("0.0.0.0/0")
-    nextHopVPN, _ := netip.ParseAddr("192.168.10.1")
+    nextHopVPN, _ := netip.ParseAddr(VPNAddress)
     err = iface.AddRoute(targetDefault, nextHopVPN, 5)
     if err != nil {
         return err

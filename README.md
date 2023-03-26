@@ -2,11 +2,11 @@
 
 This is a Golang implementation of the [OpenConnect VPN Protocol](https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-03) for client side development. 
 
-For desktop OS, similar to Cisco Secure Client's vpnagentd, it should be run as a separate background service with root privileges, so that the front-end UI does not require an administrator authorization every time it starts. The API is exposed through the WebSocket and JSON-RPC 2.0 protocols. Anyone can use any front-end tool to implement their own GUI.
+For desktop OS, similar to Cisco Secure Client's vpnagentd, it should be run as a separate background service with root privileges, so that the front-end UI does not require an administrator authorization every time it starts. 
 
-[Here](https://github.com/tlslink/anylink-client) is an example showing how to use this project.
+The API is exposed through the WebSocket and JSON-RPC 2.0 protocols. Anyone can use any front-end tool to implement their own GUI.
 
-> **Note**: The implementation of the VPN protocol itself has nothing to do with the routing table settings of the operating system. This repository contains simple [routing settings](https://github.com/dtlslink/vpnagent/blob/main/utils/utils_linux.go) under Linux. It would be great if someone has a more elegant implementation of cross-platform routing table operations.
+**[There](https://github.com/tlslink/anylink-client) is an example showing how to use this project.**
 
 Currently the following servers are supported,
 
@@ -15,7 +15,7 @@ Currently the following servers are supported,
 
 ## APIs
 
-The full VPN workflow test is currently only available under Linux, You can use any WebSocket tool to test the [API](https://github.com/dtlslink/vpnagent/blob/main/rpc/rpc.go).
+You can use any WebSocket tool to test the [API](https://github.com/tlslink/vpnagent/blob/main/rpc/rpc.go).
 
 ws://127.0.0.1:6210/rpc
 
@@ -37,7 +37,7 @@ ws://127.0.0.1:6210/rpc
   "method": "config",
   "params": {
     "log_level": "Debug",
-    "log_path": "/tmp/test.log"
+    "log_path": ""
   },
   "id": 1
 }
