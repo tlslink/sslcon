@@ -41,9 +41,9 @@ jobs:
         ls -lR
         if [ "${{ matrix.build }}" = "windows" ]; then
           mv vpnagent vpnagent.exe
-          cp vpnagent.exe ./archive/
+          cp vpnagent.exe wintun.dll ./archive/
           cd archive
-          7z a "${{ matrix.archive-name }}" LICENSE README.md vpnagent.exe
+          7z a "${{ matrix.archive-name }}" LICENSE README.md vpnagent.exe wintun.dll
         else
           cp vpnagent ./archive/
           cd archive
