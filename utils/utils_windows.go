@@ -43,29 +43,29 @@ func ConfigInterface(TunName, VPNAddress, VPNMask, ServerIP string, DNS, SplitIn
     targetServer, _ := netip.ParsePrefix(ServerIP + "/32")
     nextHopVPNGateway, _ := netip.ParseAddr(base.LocalInterface.Gateway)
     localInterface.AddRoute(targetServer, nextHopVPNGateway, 6)
-    // localInterface.DeleteRoute(targetDefault, nextHopVPNGateway)
 
-    // routes := []*winipcfg.RouteData{
-    //     {targetDefault, addr, 6},
-    //     {targetServer, gateway, 5}}
-    // err = iface.AddRoutes(routes)
-    // if err != nil {
-    //     return err
-    // }
-
+    if len(SplitInclude) != 0 {
+        routes := []*winipcfg.RouteData{}
+        for _, ipMask := range SplitInclude {
+            prefixInclude, _ := netip.ParsePrefix(IpMaskToCIDR(ipMask))
+            routes = append(routes, &winipcfg.RouteData{prefixInclude, nextHopVPN, 5})
+        }
+        iface.AddRoutes(routes)
+    } else if len(SplitExclude) != 0 {
+        routes := []*winipcfg.RouteData{}
+        for _, ipMask := range SplitExclude {
+            prefixExclude, _ := netip.ParsePrefix(IpMaskToCIDR(ipMask))
+            routes = append(routes, &winipcfg.RouteData{prefixExclude, nextHopVPNGateway, 6})
+        }
+        localInterface.AddRoutes(routes)
+    }
     // dns
-    // iface.FlushDNS(windows.AF_INET)
-
     var servers []netip.Addr
     for _, dns := range DNS {
         addr, _ := netip.ParseAddr(dns)
         servers = append(servers, addr)
-        // dnsServer, _ := netip.ParsePrefix(dns + "/32")
-        // localInterface.AddRoute(dnsServer, nextHopVPNGateway, 6)
     }
 
-    // addr, _ := netip.ParseAddr("119.6.6.6")
-    // servers = append(servers, addr)
     err = iface.SetDNS(windows.AF_INET, servers, []string{})
     if err != nil {
         return err
@@ -75,19 +75,11 @@ func ConfigInterface(TunName, VPNAddress, VPNMask, ServerIP string, DNS, SplitIn
 }
 
 func ResetRouting(ServerIP string, DNS, SplitExclude []string) {
+    localInterface.FlushRoutes(windows.AF_INET)
 
-    targetServer, _ := netip.ParsePrefix(ServerIP + "/32")
+    targetDefault, _ := netip.ParsePrefix("0.0.0.0/0")
     nextHopVPNGateway, _ := netip.ParseAddr(base.LocalInterface.Gateway)
-    localInterface.DeleteRoute(targetServer, nextHopVPNGateway)
-
-    // for _, dns := range DNS {
-    //     dnsServer, _ := netip.ParsePrefix(dns + "/32")
-    //     localInterface.DeleteRoute(dnsServer, nextHopVPNGateway)
-    // }
-
-    // targetDefault, _ := netip.ParsePrefix("0.0.0.0/0")
-    // localInterface.AddRoute(targetDefault, nextHopVPNGateway, 25)
-
+    localInterface.AddRoute(targetDefault, nextHopVPNGateway, 25)
 }
 
 func GetLocalInterface() error {
