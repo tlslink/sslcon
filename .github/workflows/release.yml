@@ -4,10 +4,12 @@
 name: Release
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch
 
 jobs:
-
+  setup:
+    name: Setup
+    uses: ./.github/workflows/release-setup.yml
   build:
     name: Build
     runs-on: ${{ matrix.os }}
@@ -54,3 +56,18 @@ jobs:
       with:
         name: ${{ matrix.archive-name }}
         path: archive/${{ matrix.archive-name }}
+        
+    - name: Continuous release
+      uses: softprops/action-gh-release@v1
+      if: github.ref == 'refs/heads/main'
+      with:
+        prerelease: false
+        files: archive/${{ matrix.archive-name }}
+        tag_name: continuous
+        
+    - if: (startsWith(github.ref, 'refs/tags/'))
+      name: Tagged release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: archive/${{ matrix.archive-name }}
+        name: Release build (${{ github.ref_name }})
