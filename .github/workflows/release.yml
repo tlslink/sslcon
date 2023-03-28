@@ -33,7 +33,7 @@ jobs:
     - name: Install dependencies
       run: go get .
     - name: Build
-      run: go build -o vpnagent vpnagent.go
+      run: go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
       
     - name: Build archive
       shell: bash
