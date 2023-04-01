@@ -1,17 +1,34 @@
+//go:build linux || darwin || windows
+
 package main
 
 import (
+    "fmt"
     "os"
     "os/signal"
     "syscall"
     "vpnagent/base"
     "vpnagent/rpc"
+    "vpnagent/svc"
 )
 
 func main() {
-    base.Setup()
-    rpc.Setup()
-    watchSignal() // 主协程退出则应用退出
+    // fmt.Println("os.Args: ", len(os.Args))
+    if len(os.Args) < 2 {
+        base.Setup()
+        rpc.Setup()
+        watchSignal() // 主协程退出则应用退出
+    } else {
+        cmd := os.Args[1]
+        switch cmd {
+        case "install":
+            svc.InstallSvc()
+        case "uninstall":
+            svc.UninstallSvc()
+        default:
+            fmt.Println("invalid command: ", cmd)
+        }
+    }
 }
 
 func watchSignal() {

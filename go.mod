@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/gorilla/websocket v1.5.0
+	github.com/kardianos/service v1.2.2
 	github.com/pion/dtls/v2 v2.2.6
 	github.com/sourcegraph/jsonrpc2 v0.2.0
 	golang.org/x/net v0.8.0
