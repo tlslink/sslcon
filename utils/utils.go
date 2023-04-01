@@ -26,7 +26,7 @@ func SetCommonHeader(req *http.Request) {
     if base.Cfg.CiscoCompat {
         req.Header.Set("User-Agent", "AnyConnect")
     } else {
-        req.Header.Set("User-Agent", base.AgentName+" "+base.AgentVersion)
+        req.Header.Set("User-Agent", base.AgentName+base.AgentVersion)
     }
 }
 
