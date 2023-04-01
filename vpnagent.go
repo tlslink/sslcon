@@ -4,6 +4,7 @@ package main
 
 import (
     "fmt"
+    "github.com/kardianos/service"
     "os"
     "os/signal"
     "syscall"
@@ -15,9 +16,13 @@ import (
 func main() {
     // fmt.Println("os.Args: ", len(os.Args))
     if len(os.Args) < 2 {
-        base.Setup()
-        rpc.Setup()
-        watchSignal() // 主协程退出则应用退出
+        if service.Interactive() {
+            base.Setup()
+            rpc.Setup()
+            watchSignal() // 主协程退出则应用退出
+        } else {
+            svc.RunSvc()
+        }
     } else {
         cmd := os.Args[1]
         switch cmd {

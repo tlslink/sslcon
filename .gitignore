@@ -1,4 +1,5 @@
 .idea/*
 !.idea/codeStyles
+test.go
 vpnagent
-vpnagent.exe
+*.exe
