@@ -13,7 +13,7 @@ jobs:
         echo "GitHub Ref: ${{ github.ref }}"
     - name: Automatic release
       uses: "marvinpinto/action-automatic-releases@latest"
-      if: github.ref == 'refs/heads/main'
+      if: startsWith(github.ref, 'refs/heads/')
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         automatic_release_tag: "continuous"
