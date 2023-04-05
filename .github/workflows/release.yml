@@ -59,7 +59,7 @@ jobs:
         
     - name: Continuous release
       uses: softprops/action-gh-release@v1
-      if: github.ref == 'refs/heads/main'
+      if: startsWith(github.ref, 'refs/heads/')
       with:
         prerelease: false
         files: archive/${{ matrix.archive-name }}
