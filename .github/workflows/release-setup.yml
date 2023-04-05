@@ -11,10 +11,11 @@ jobs:
     - name: Job info
       run: |
         echo "GitHub Ref: ${{ github.ref }}"
-    - uses: "marvinpinto/action-automatic-releases@latest"
+    - name: Automatic release
+      uses: "marvinpinto/action-automatic-releases@latest"
       if: github.ref == 'refs/heads/main'
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         automatic_release_tag: "continuous"
-        prerelease: false
-        title: "Continuous Release"
+        prerelease: true
+        title: "Continuous release"
