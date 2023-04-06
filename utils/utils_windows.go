@@ -33,32 +33,34 @@ func ConfigInterface(TunName, VPNAddress, VPNMask, ServerIP string, DNS, SplitIn
     }
 
     // routes
-    targetDefault, _ := netip.ParsePrefix("0.0.0.0/0")
     nextHopVPN, _ := netip.ParseAddr(VPNAddress)
-    err = iface.AddRoute(targetDefault, nextHopVPN, 5)
-    if err != nil {
-        return err
-    }
-
     targetServer, _ := netip.ParsePrefix(ServerIP + "/32")
     nextHopVPNGateway, _ := netip.ParseAddr(base.LocalInterface.Gateway)
     localInterface.AddRoute(targetServer, nextHopVPNGateway, 6)
 
-    if len(SplitInclude) != 0 {
+    if len(SplitInclude) == 0 {
+        targetDefault, _ := netip.ParsePrefix("0.0.0.0/0")
+        err = iface.AddRoute(targetDefault, nextHopVPN, 5)
+        if err != nil {
+            return err
+        }
+        if len(SplitExclude) != 0 {
+            routes := []*winipcfg.RouteData{}
+            for _, ipMask := range SplitExclude {
+                prefixExclude, _ := netip.ParsePrefix(IpMaskToCIDR(ipMask))
+                routes = append(routes, &winipcfg.RouteData{prefixExclude, nextHopVPNGateway, 6})
+            }
+            localInterface.AddRoutes(routes)
+        }
+    } else {
         routes := []*winipcfg.RouteData{}
         for _, ipMask := range SplitInclude {
             prefixInclude, _ := netip.ParsePrefix(IpMaskToCIDR(ipMask))
             routes = append(routes, &winipcfg.RouteData{prefixInclude, nextHopVPN, 5})
         }
         iface.AddRoutes(routes)
-    } else if len(SplitExclude) != 0 {
-        routes := []*winipcfg.RouteData{}
-        for _, ipMask := range SplitExclude {
-            prefixExclude, _ := netip.ParsePrefix(IpMaskToCIDR(ipMask))
-            routes = append(routes, &winipcfg.RouteData{prefixExclude, nextHopVPNGateway, 6})
-        }
-        localInterface.AddRoutes(routes)
     }
+
     // dns
     var servers []netip.Addr
     for _, dns := range DNS {

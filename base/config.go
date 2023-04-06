@@ -9,7 +9,6 @@ type ClientConfig struct {
     LogLevel           string `json:"log_level"`
     LogPath            string `json:"log_path"`
     InsecureSkipVerify bool   `json:"skip_verify"`
-    AllowLAN           bool   `json:"allow_lan"`
     CiscoCompat        bool   `json:"cisco_compat"`
 }
 
@@ -24,6 +23,5 @@ type Interface struct {
 func initCfg() {
     Cfg.LogLevel = "Debug"
     Cfg.InsecureSkipVerify = true
-    Cfg.AllowLAN = true
     Cfg.CiscoCompat = true
 }

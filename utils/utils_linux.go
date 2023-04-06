@@ -14,22 +14,28 @@ func ConfigInterface(TunName, VPNAddress, VPNMask, ServerIP string, DNS, SplitIn
     cmdStr1 := fmt.Sprintf("ip link set dev %s up multicast off", TunName)
     cmdStr2 := fmt.Sprintf("ip addr add dev %s %s", TunName, IpMask2CIDR(VPNAddress, VPNMask))
 
-    cmdStr3 := fmt.Sprintf("ip route add default dev %s", TunName)
-    cmdStr4 := fmt.Sprintf("ip route add %s/32 via %s dev %s", ServerIP, base.LocalInterface.Gateway, base.LocalInterface.Name)
+    cmdStr3 := fmt.Sprintf("ip route add %s/32 via %s dev %s", ServerIP, base.LocalInterface.Gateway, base.LocalInterface.Name)
 
-    err := execCmd([]string{cmdStr1, cmdStr2, cmdStr3, cmdStr4})
+    err := execCmd([]string{cmdStr1, cmdStr2, cmdStr3})
     if err != nil {
         return err
     }
 
-    if len(SplitInclude) != 0 {
+    if len(SplitInclude) == 0 {
+        cmdStr4 := fmt.Sprintf("ip route add default dev %s", TunName)
+        err = execCmd([]string{cmdStr4})
+        if err != nil {
+            return err
+        }
+        if len(SplitExclude) != 0 {
+            for _, ipMask := range SplitExclude {
+                cmdStr := fmt.Sprintf("ip route add %s via %s dev %s", IpMaskToCIDR(ipMask), base.LocalInterface.Gateway, base.LocalInterface.Name)
+                _ = execCmd([]string{cmdStr})
+            }
+        }
+    } else {
         for _, ipMask := range SplitInclude {
             cmdStr := fmt.Sprintf("ip route add %s dev %s", IpMaskToCIDR(ipMask), TunName)
-            _ = execCmd([]string{cmdStr})
-        }
-    } else if len(SplitExclude) != 0 {
-        for _, ipMask := range SplitExclude {
-            cmdStr := fmt.Sprintf("ip route add %s via %s dev %s", IpMaskToCIDR(ipMask), base.LocalInterface.Gateway, base.LocalInterface.Name)
             _ = execCmd([]string{cmdStr})
         }
     }
