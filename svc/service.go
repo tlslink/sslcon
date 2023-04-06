@@ -7,7 +7,7 @@ import (
     "vpnagent/rpc"
 )
 
-type initiate struct{}
+type program struct{}
 
 var logger service.Logger
 
@@ -17,11 +17,11 @@ var (
         DisplayName: "AnyLink Agent",
         Description: "AnyLink Secure Client Agent",
     }
-    prg = &initiate{}
+    prg = &program{}
 )
 
 // Start should not block. Do the actual work async.
-func (p initiate) Start(s service.Service) error {
+func (p program) Start(s service.Service) error {
     if service.Interactive() {
         logger.Info("Running in terminal.")
     } else {
@@ -32,14 +32,14 @@ func (p initiate) Start(s service.Service) error {
 }
 
 // Stop should not block. Return with a few seconds.
-func (p initiate) Stop(s service.Service) error {
+func (p program) Stop(s service.Service) error {
     logger.Info("I'm Stopping!")
     base.Info("Stop")
     rpc.DisConnect()
     return nil
 }
 
-func (p initiate) run() {
+func (p program) run() {
     base.Setup()
     rpc.Setup()
 }
