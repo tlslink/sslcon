@@ -29,8 +29,8 @@ jobs:
     - name: Build
       shell: bash
       run: |
-        if [ "${{ matrix.build }}" = "ubuntu-20.04" ]; then
+        if [ "${{ matrix.os }}" = "ubuntu-20.04" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
-        elif [ "${{ matrix.build }}" = "windows-2019" ]; then
+        elif [ "${{ matrix.os }}" = "windows-2019" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent.exe vpnagent.go
         fi
