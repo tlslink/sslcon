@@ -26,7 +26,7 @@ type TLSRsaWithAes128GcmSha256 struct {
     gcm atomic.Value // *cryptoGCM
 }
 
-// CertificateType returns what type of certficate this CipherSuite exchanges
+// CertificateType returns what type of certificate this CipherSuite exchanges
 func (c *TLSRsaWithAes128GcmSha256) CertificateType() clientcertificate.Type {
     return clientcertificate.ECDSASign
 }
