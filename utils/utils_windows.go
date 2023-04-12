@@ -92,17 +92,20 @@ func GetLocalInterface() error {
 
     var primaryInterface *winipcfg.IPAdapterAddresses
     for _, ifc := range ifcs {
-        // println(ifc.AdapterName(), ifc.Description(), ifc.FriendlyName(), ifc.Ipv4Metric, ifc.IfType)
+        base.Debug(ifc.AdapterName(), ifc.Description(), ifc.FriendlyName(), ifc.Ipv4Metric, ifc.IfType)
         // exclude Virtual Ethernet and Loopback Adapter
         if !strings.Contains(ifc.Description(), "Virtual") {
             // https://git.zx2c4.com/wireguard-windows/tree/tunnel/winipcfg/types.go?h=v0.5.3#n61
-            if ifc.IfType == 6 || ifc.IfType == 71 {
-                if primaryInterface == nil || (ifc.FirstGatewayAddress != nil && ifc.Ipv4Metric < primaryInterface.Ipv4Metric) {
+            if (ifc.IfType == 6 || ifc.IfType == 71) && ifc.FirstGatewayAddress != nil {
+                if primaryInterface == nil || (ifc.Ipv4Metric < primaryInterface.Ipv4Metric) {
                     primaryInterface = ifc
                 }
             }
         }
     }
+
+    base.Info("GetLocalInterface: ", primaryInterface.AdapterName(), primaryInterface.Description(),
+        primaryInterface.FriendlyName(), primaryInterface.Ipv4Metric, primaryInterface.IfType)
 
     base.LocalInterface.Name = primaryInterface.FriendlyName()
     base.LocalInterface.Ip4 = primaryInterface.FirstUnicastAddress.Address.IP().String()
