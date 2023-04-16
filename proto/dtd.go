@@ -1,4 +1,4 @@
-package auth
+package proto
 
 import "encoding/xml"
 
@@ -17,6 +17,7 @@ type DTD struct {
     Auth                 auth           `xml:"auth"`
     DeviceId             deviceId       `xml:"device-id"`
     MacAddressList       macAddressList `xml:"mac-address-list"`
+    // Config               config         `xml:"config"`
 }
 
 type auth struct {
@@ -49,3 +50,18 @@ type deviceId struct {
 type macAddressList struct {
     MacAddress string `xml:"mac-address"`
 }
+
+/*
+type config struct {
+    Opaque opaque `xml:"opaque"`
+}
+
+type opaque struct {
+    CustomAttr customAttr `xml:"custom-attr"`
+}
+
+type customAttr struct {
+    DynamicSplitExcludeDomains string `xml:"dynamic-split-exclude-domains"`
+    DynamicSplitIncludeDomains string `xml:"dynamic-split-include-domains"`
+}
+*/

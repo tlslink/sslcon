@@ -7,12 +7,13 @@ import (
     "encoding/xml"
     "errors"
     "fmt"
-    "io/ioutil"
+    "io"
     "net"
     "net/http"
     "strings"
     "text/template"
     "vpnagent/base"
+    "vpnagent/proto"
     "vpnagent/session"
     "vpnagent/utils"
 )
@@ -69,7 +70,7 @@ func InitAuth() error {
     BufR = bufio.NewReader(Conn)
     // base.Info(Conn.ConnectionState().Version)
 
-    dtd := DTD{}
+    dtd := proto.DTD{}
     err = tplPost(tplInit, "", &dtd)
     if err != nil {
         return err
@@ -92,7 +93,7 @@ func InitAuth() error {
 
 // PasswordAuth 认证成功后，服务端新建 ConnSession，并生成 SessionToken 或者通过 Header 返回 WebVpnCookie
 func PasswordAuth() error {
-    dtd := DTD{}
+    dtd := proto.DTD{}
     // 发送用户名或者用户名+密码
     err := tplPost(tplAuthReply, Prof.AuthPath, &dtd)
     if err != nil {
@@ -100,7 +101,7 @@ func PasswordAuth() error {
     }
     // 兼容两步登陆，如必要则再次发送
     if dtd.Type == "auth-request" && dtd.Auth.Error.Value == "" {
-        dtd = DTD{}
+        dtd = proto.DTD{}
         err = tplPost(tplAuthReply, Prof.AuthPath, &dtd)
         if err != nil {
             return err
@@ -125,7 +126,7 @@ func PasswordAuth() error {
 }
 
 // 渲染模板并发送请求
-func tplPost(typ int, path string, dtd *DTD) error {
+func tplPost(typ int, path string, dtd *proto.DTD) error {
     var tplBuffer bytes.Buffer
     if typ == tplInit {
         t, _ := template.New("init").Parse(templateInit)
@@ -157,7 +158,7 @@ func tplPost(typ int, path string, dtd *DTD) error {
     defer resp.Body.Close()
 
     if resp.StatusCode == http.StatusOK {
-        body, err := ioutil.ReadAll(resp.Body)
+        body, err := io.ReadAll(resp.Body)
         if err != nil {
             Conn.Close()
             return err

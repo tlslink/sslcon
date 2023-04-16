@@ -33,16 +33,18 @@ type stat struct {
 
 // ConnSession used for both TLS and DTLS
 type ConnSession struct {
-    ServerAddress     string
-    LocalAddress      string
-    Hostname          string
-    TunName           string
-    VPNAddress        string // The IPv4 address of the client
-    VPNMask           string // IPv4 netmask
-    DNS               []string
-    MTU               int
-    SplitInclude      []string
-    SplitExclude      []string
+    ServerAddress string
+    LocalAddress  string
+    Hostname      string
+    TunName       string
+    VPNAddress    string // The IPv4 address of the client
+    VPNMask       string // IPv4 netmask
+    DNS           []string
+    MTU           int
+    SplitInclude  []string
+    SplitExclude  []string
+    // DynamicSplitExcludeDomains string
+    // DynamicSplitIncludeDomains string
     TLSCipherSuite    string
     TLSDpdTime        int // https://datatracker.ietf.org/doc/html/rfc3706
     TLSKeepaliveTime  int
@@ -109,6 +111,21 @@ func (sess *Session) NewConnSession(header *http.Header) *ConnSession {
     cSess.DTLSCipherSuite = header.Get("X-DTLS12-CipherSuite")
     cSess.DTLSDpdTime, _ = strconv.Atoi(header.Get("X-DTLS-DPD"))
     cSess.DTLSKeepaliveTime, _ = strconv.Atoi(header.Get("X-DTLS-Keepalive"))
+
+    // 客户端动态解析域名并设置路由非常影响体验，特别是被管理员滥用设置过多的域名情况下那将非常恶心，目前不打算支持
+    /*
+       postAuth := header.Get("X-CSTP-Post-Auth-XML")
+       if postAuth != "" {
+           dtd := proto.DTD{}
+           err := xml.Unmarshal([]byte(postAuth), &dtd)
+           if err != nil {
+               cSess.DynamicSplitExcludeDomains = dtd.Config.Opaque.CustomAttr.DynamicSplitExcludeDomains
+               cSess.DynamicSplitIncludeDomains = dtd.Config.Opaque.CustomAttr.DynamicSplitIncludeDomains
+               // base.Debug(cSess.DynamicSplitExcludeDomains)
+               // base.Debug(cSess.DynamicSplitIncludeDomains)
+           }
+       }*/
+
     return cSess
 }
 

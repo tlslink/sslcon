@@ -88,6 +88,8 @@ func SetupTunnel() error {
     if base.Cfg.LogLevel == "Debug" {
         headers := make([]byte, 0)
         buf := bytes.NewBuffer(headers)
+        // http.ReadResponse: Keys in the map are canonicalized (see CanonicalHeaderKey).
+        // https://ron-liu.medium.com/what-canonical-http-header-mean-in-golang-2e97f854316d
         _ = resp.Header.Write(buf)
         base.Debug(buf.String())
     }
