@@ -1,143 +1,107 @@
 package utils
 
 import (
-    "errors"
     "fmt"
+    "github.com/vishvananda/netlink"
     "net"
     "os/exec"
-    "strings"
     "vpnagent/base"
 )
 
+var localInterface netlink.Link
+
 func ConfigInterface(TunName, VPNAddress, VPNMask, ServerIP string, DNS, SplitInclude, SplitExclude []string) error {
-    // base.Debug(*base.LocalInterface)
-    cmdStr1 := fmt.Sprintf("ip link set dev %s up multicast off", TunName)
-    cmdStr2 := fmt.Sprintf("ip addr add dev %s %s", TunName, IpMask2CIDR(VPNAddress, VPNMask))
+    iface, err := netlink.LinkByName(TunName)
+    if err != nil {
+        return err
+    }
+    // ip address
+    _ = netlink.LinkSetUp(iface)
+    _ = netlink.LinkSetMulticastOff(iface)
 
-    cmdStr3 := fmt.Sprintf("ip route add %s/32 via %s dev %s", ServerIP, base.LocalInterface.Gateway, base.LocalInterface.Name)
+    addr, _ := netlink.ParseAddr(IpMask2CIDR(VPNAddress, VPNMask))
+    err = netlink.AddrAdd(iface, addr)
+    if err != nil {
+        return err
+    }
 
-    err := execCmd([]string{cmdStr1, cmdStr2, cmdStr3})
+    // routes
+    dst, _ := netlink.ParseIPNet(ServerIP + "/32")
+    route := netlink.Route{LinkIndex: localInterface.Attrs().Index, Dst: dst, Gw: net.ParseIP(base.LocalInterface.Gateway)}
+    err = netlink.RouteAdd(&route)
     if err != nil {
         return err
     }
 
     if len(SplitInclude) == 0 {
-        cmdStr4 := fmt.Sprintf("ip route add default dev %s", TunName)
-        err = execCmd([]string{cmdStr4})
+        dst, _ = netlink.ParseIPNet("0.0.0.0/0")
+        route = netlink.Route{LinkIndex: iface.Attrs().Index, Dst: dst, Priority: 5}
+        err = netlink.RouteAdd(&route)
         if err != nil {
             return err
         }
+
         if len(SplitExclude) != 0 {
             for _, ipMask := range SplitExclude {
-                cmdStr := fmt.Sprintf("ip route add %s via %s dev %s", IpMaskToCIDR(ipMask), base.LocalInterface.Gateway, base.LocalInterface.Name)
-                _ = execCmd([]string{cmdStr})
+                dst, _ = netlink.ParseIPNet(IpMaskToCIDR(ipMask))
+                route = netlink.Route{LinkIndex: localInterface.Attrs().Index, Dst: dst, Gw: net.ParseIP(base.LocalInterface.Gateway)}
+                _ = netlink.RouteAdd(&route)
             }
         }
     } else {
         for _, ipMask := range SplitInclude {
-            cmdStr := fmt.Sprintf("ip route add %s dev %s", IpMaskToCIDR(ipMask), TunName)
-            _ = execCmd([]string{cmdStr})
+            dst, _ = netlink.ParseIPNet(IpMaskToCIDR(ipMask))
+            route = netlink.Route{LinkIndex: iface.Attrs().Index, Dst: dst}
+            _ = netlink.RouteAdd(&route)
         }
     }
 
-    // todo: backup and restore dns?
+    // dns
+    CopyFile("/tmp/resolv.conf.bak", "/etc/resolv.conf")
+    var dnsString string
     for _, dns := range DNS {
-        // do not secure dns
-        // dnsStr1 := fmt.Sprintf("ip route add %s/32 via %s dev %s", dns, base.LocalInterface.Gateway, base.LocalInterface.Name)
-        // _ = execCmd([]string{dnsStr1})
-
-        dnsStr2 := fmt.Sprintf("sed -i '1i\\nameserver %s'  /etc/resolv.conf", dns)
-        err = execCmd([]string{dnsStr2})
+        dnsString += fmt.Sprintf("nameserver %s\n", dns)
     }
+    NewRecord("/etc/resolv.conf").Prepend(dnsString)
 
     return err
 }
 
 func ResetRouting(ServerIP string, DNS, SplitExclude []string) {
-    cmdStr := fmt.Sprintf("ip route del %s/32 dev %s", ServerIP, base.LocalInterface.Name)
-    _ = execCmd([]string{cmdStr})
+    // routes
+    dst, _ := netlink.ParseIPNet(ServerIP + "/32")
+    _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterface.Attrs().Index, Dst: dst})
 
-    // for _, dns := range DNS {
-    //    dnsStr1 := fmt.Sprintf("ip route del %s/32 via %s dev %s", dns, base.LocalInterface.Gateway, base.LocalInterface.Name)
-    //    _ = execCmd([]string{dnsStr1})
-    // }
-
-    size := len(DNS)
-    if size == 1 {
-        _ = execCmd([]string{"sed -i '1d' /etc/resolv.conf"})
-    } else if size > 1 {
-        _ = execCmd([]string{fmt.Sprintf("sed -i '1,%dd' /etc/resolv.conf", size)})
-    }
     if len(SplitExclude) != 0 {
         for _, ipMask := range SplitExclude {
-            routeCmdStr := fmt.Sprintf("ip route del %s via %s dev %s", IpMaskToCIDR(ipMask), base.LocalInterface.Gateway, base.LocalInterface.Name)
-            _ = execCmd([]string{routeCmdStr})
+            dst, _ = netlink.ParseIPNet(IpMaskToCIDR(ipMask))
+            _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterface.Attrs().Index, Dst: dst})
         }
     }
+
+    // dns
+    CopyFile("/etc/resolv.conf", "/tmp/resolv.conf.bak")
 }
 
 func GetLocalInterface() error {
-    iface, err := getPrimaryInterface()
-    if err != nil {
-        return err
-    }
-    addrs, _ := iface.Addrs()
-    var ip net.IP
-    for _, addr := range addrs {
-        switch v := addr.(type) {
-        case *net.IPNet:
-            ip = v.IP
-        case *net.IPAddr:
-            ip = v.IP
-        }
-        ip = ip.To4()
-        if ip != nil {
-            break
-        }
-    }
 
-    base.LocalInterface.Name = iface.Name
-    base.LocalInterface.Ip4 = ip.String()
-    base.LocalInterface.Gateway = getDefaultGateway(iface.Name)
-    base.LocalInterface.Mac = iface.HardwareAddr.String()
-
-    return nil
-}
-
-func getPrimaryInterface() (net.Interface, error) {
-    ifaces, _ := net.Interfaces()
-    for _, iface := range ifaces {
-        name := strings.ToLower(iface.Name)
-        if strings.HasPrefix(name, "cscotun") {
-            return net.Interface{}, errors.New("looks like there are other VPN services running")
+    // just for default route
+    routes, err := netlink.RouteGet(net.ParseIP("8.8.8.8"))
+    if len(routes) > 0 {
+        route := routes[0]
+        localInterface, err = netlink.LinkByIndex(route.LinkIndex)
+        if err != nil {
+            return err
         }
-    }
-    for _, iface := range ifaces {
-        addrs, _ := iface.Addrs()
-        if iface.Flags&net.FlagLoopback == 0 && iface.Flags&net.FlagUp == 1 && len(addrs) != 0 {
-            name := strings.ToLower(iface.Name)
-            if strings.HasPrefix(name, "en") || strings.HasPrefix(name, "eth") || strings.HasPrefix(name, "wl") {
-                return iface, nil
-            }
-        }
-    }
-    return net.Interface{}, errors.New("failed to get a valid network interface")
-}
+        base.LocalInterface.Name = localInterface.Attrs().Name
+        base.LocalInterface.Ip4 = route.Src.String()
+        base.LocalInterface.Gateway = route.Gw.String()
+        base.LocalInterface.Mac = localInterface.Attrs().HardwareAddr.String()
 
-func getDefaultGateway(iface string) string {
-    cmd := exec.Command("sh", "-c", fmt.Sprintf("ip route show default dev %s", iface))
-    b, err := cmd.CombinedOutput()
-    if err != nil {
-        base.Error(fmt.Errorf("%s %s", string(b), cmd.String()))
-        return ""
+        base.Info("GetLocalInterface: ", *base.LocalInterface)
+        return nil
     }
-    route := strings.Split(strings.Split(string(b), "\n")[0], " ")
-    for i, str := range route {
-        if str == "via" {
-            return route[i+1]
-        }
-    }
-    return ""
+    return err
 }
 
 func execCmd(cmdStrs []string) error {

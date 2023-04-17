@@ -6,6 +6,7 @@ import (
     "github.com/pion/dtls/v2/pkg/protocol"
     "net"
     "net/http"
+    "os"
     "runtime"
     "strings"
     "vpnagent/base"
@@ -76,4 +77,17 @@ func Max(init int, other ...int) int {
         }
     }
     return max
+}
+
+func CopyFile(dstName, srcName string) (err error) {
+    input, err := os.ReadFile(srcName)
+    if err != nil {
+        return err
+    }
+
+    err = os.WriteFile(dstName, input, 0644)
+    if err != nil {
+        return err
+    }
+    return nil
 }
