@@ -22,10 +22,10 @@ func setupTun(cSess *session.ConnSession) error {
         return err
     }
     base.Debug("tun device:", cSess.TunName)
-
     tun.NativeTunDevice = dev.(*tun.NativeTun)
-    err = utils.ConfigInterface(cSess.TunName, cSess.VPNAddress, cSess.VPNMask, cSess.ServerAddress, cSess.DNS,
-        cSess.SplitInclude, cSess.SplitExclude)
+
+    // 不可并行
+    err = utils.ConfigInterface(cSess.TunName, cSess.VPNAddress, cSess.VPNMask, cSess.DNS)
     if err != nil {
         _ = dev.Close()
         return err

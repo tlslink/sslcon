@@ -1,6 +1,7 @@
 package utils
 
 import (
+    "context"
     "fmt"
     "golang.org/x/sys/windows"
     "golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
@@ -12,53 +13,29 @@ import (
     "vpnagent/tun"
 )
 
-var localInterface winipcfg.LUID
+var (
+    localInterface winipcfg.LUID
+    iface          winipcfg.LUID
+    nextHopVPN     netip.Addr
+)
 
-func ConfigInterface(TunName, VPNAddress, VPNMask, ServerIP string, DNS, SplitInclude, SplitExclude []string) error {
+func ConfigInterface(TunName, VPNAddress, VPNMask string, DNS []string) error {
     mtu, _ := tun.NativeTunDevice.MTU()
     err := SetMTU(TunName, mtu)
     if err != nil {
         return err
     }
 
-    iface := winipcfg.LUID(tun.NativeTunDevice.LUID())
+    iface = winipcfg.LUID(tun.NativeTunDevice.LUID())
 
     // ip address
     iface.FlushIPAddresses(windows.AF_UNSPEC)
 
+    nextHopVPN, _ = netip.ParseAddr(VPNAddress)
     prefixVPN, _ := netip.ParsePrefix(IpMask2CIDR(VPNAddress, VPNMask))
     err = iface.SetIPAddressesForFamily(windows.AF_INET, []netip.Prefix{prefixVPN})
     if err != nil {
         return err
-    }
-
-    // routes
-    nextHopVPN, _ := netip.ParseAddr(VPNAddress)
-    targetServer, _ := netip.ParsePrefix(ServerIP + "/32")
-    nextHopVPNGateway, _ := netip.ParseAddr(base.LocalInterface.Gateway)
-    localInterface.AddRoute(targetServer, nextHopVPNGateway, 6)
-
-    if len(SplitInclude) == 0 {
-        targetDefault, _ := netip.ParsePrefix("0.0.0.0/0")
-        err = iface.AddRoute(targetDefault, nextHopVPN, 5)
-        if err != nil {
-            return err
-        }
-        if len(SplitExclude) != 0 {
-            routes := []*winipcfg.RouteData{}
-            for _, ipMask := range SplitExclude {
-                prefixExclude, _ := netip.ParsePrefix(IpMaskToCIDR(ipMask))
-                routes = append(routes, &winipcfg.RouteData{prefixExclude, nextHopVPNGateway, 6})
-            }
-            localInterface.AddRoutes(routes)
-        }
-    } else {
-        routes := []*winipcfg.RouteData{}
-        for _, ipMask := range SplitInclude {
-            prefixInclude, _ := netip.ParsePrefix(IpMaskToCIDR(ipMask))
-            routes = append(routes, &winipcfg.RouteData{prefixInclude, nextHopVPN, 5})
-        }
-        iface.AddRoutes(routes)
     }
 
     // dns
@@ -76,12 +53,108 @@ func ConfigInterface(TunName, VPNAddress, VPNMask, ServerIP string, DNS, SplitIn
     return nil
 }
 
-func ResetRouting(ServerIP string, DNS, SplitExclude []string) {
-    localInterface.FlushRoutes(windows.AF_INET)
-
-    targetDefault, _ := netip.ParsePrefix("0.0.0.0/0")
+func SetRoutes(ServerIP string, SplitInclude, SplitExclude, DynamicSplitIncludeDomains, DynamicSplitExcludeDomains *[]string) error {
+    // routes
+    targetServer, err := netip.ParsePrefix(ServerIP + "/32")
     nextHopVPNGateway, _ := netip.ParseAddr(base.LocalInterface.Gateway)
-    localInterface.AddRoute(targetDefault, nextHopVPNGateway, 25)
+    localInterface.AddRoute(targetServer, nextHopVPNGateway, 6)
+
+    if len(*SplitInclude) > 0 || len(*DynamicSplitIncludeDomains) > 0 {
+        if len(*SplitInclude) > 0 {
+            routes := []*winipcfg.RouteData{}
+            for _, ipMask := range *SplitInclude {
+                dst, _ := netip.ParsePrefix(IpMaskToCIDR(ipMask))
+                routes = append(routes, &winipcfg.RouteData{dst, nextHopVPN, 5})
+            }
+            iface.AddRoutes(routes)
+        }
+        if len(*DynamicSplitIncludeDomains) > 0 {
+            resolver := &net.Resolver{}
+            for _, domain := range *DynamicSplitIncludeDomains {
+                if domain != "" {
+                    // 尝试解决一个域名对应多个 IP 地址情况，不太靠谱
+                    cname, _ := resolver.LookupCNAME(context.Background(), domain)
+                    if cname != "" && domain+"." != cname {
+                        domain = cname
+                        // 最多两层套娃，www.baidu.com > www.a.shifen.com > www.wshifen.com
+                        cname2, _ := resolver.LookupCNAME(context.Background(), domain)
+                        if cname2 != "" && domain != cname2 {
+                            domain = cname2
+                        }
+                    }
+                    ips, _ := resolver.LookupIP(context.Background(), "ip4", domain)
+                    if len(ips) > 0 {
+                        for _, ip := range ips {
+                            if ip != nil {
+                                ipMask := ip.String() + "/255.255.255.255"
+                                dst, _ := netip.ParsePrefix(IpMaskToCIDR(ipMask))
+                                iface.AddRoute(dst, nextHopVPN, 5)
+
+                                *SplitInclude = append(*SplitInclude, ipMask)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        targetDefault, _ := netip.ParsePrefix("0.0.0.0/0")
+        err = iface.AddRoute(targetDefault, nextHopVPN, 5)
+        if err != nil {
+            return err
+        }
+        if len(*SplitExclude) > 0 {
+            routes := []*winipcfg.RouteData{}
+            for _, ipMask := range *SplitExclude {
+                dst, _ := netip.ParsePrefix(IpMaskToCIDR(ipMask))
+                routes = append(routes, &winipcfg.RouteData{dst, nextHopVPNGateway, 6})
+            }
+            localInterface.AddRoutes(routes)
+        }
+
+        if len(*DynamicSplitExcludeDomains) > 0 {
+            resolver := &net.Resolver{}
+            for _, domain := range *DynamicSplitExcludeDomains {
+                if domain != "" {
+                    cname, _ := resolver.LookupCNAME(context.Background(), domain)
+                    if cname != "" && domain+"." != cname {
+                        domain = cname
+                        // 最多两层套娃，www.baidu.com > www.a.shifen.com > www.wshifen.com
+                        cname2, _ := resolver.LookupCNAME(context.Background(), domain)
+                        if cname2 != "" && domain != cname2 {
+                            domain = cname2
+                        }
+                    }
+                    ips, _ := resolver.LookupIP(context.Background(), "ip4", domain)
+                    if len(ips) > 0 {
+                        for _, ip := range ips {
+                            if ip != nil {
+                                ipMask := ip.String() + "/255.255.255.255"
+                                dst, _ := netip.ParsePrefix(IpMaskToCIDR(ipMask))
+                                localInterface.AddRoute(dst, nextHopVPNGateway, 5)
+
+                                *SplitExclude = append(*SplitExclude, ipMask)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return err
+}
+
+func ResetRoutes(ServerIP string, DNS, SplitExclude []string) {
+    targetServer, _ := netip.ParsePrefix(ServerIP + "/32")
+    nextHopVPNGateway, _ := netip.ParseAddr(base.LocalInterface.Gateway)
+    localInterface.DeleteRoute(targetServer, nextHopVPNGateway)
+
+    if len(SplitExclude) > 0 {
+        for _, ipMask := range SplitExclude {
+            dst, _ := netip.ParsePrefix(IpMaskToCIDR(ipMask))
+            localInterface.DeleteRoute(dst, nextHopVPNGateway)
+        }
+    }
 }
 
 func GetLocalInterface() error {

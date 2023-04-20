@@ -116,5 +116,15 @@ func SetupTunnel() error {
     cSess.DPDTimer()
     cSess.ReadDeadTimer()
 
-    return nil
+    // 因为有DPD检测，路由设置不影响 vpn 连接性，服务端有可能自己根据情况主动断开
+    go func() {
+        err = utils.SetRoutes(cSess.ServerAddress, &cSess.SplitInclude, &cSess.SplitExclude,
+            &cSess.DynamicSplitIncludeDomains, &cSess.DynamicSplitExcludeDomains)
+        if err != nil {
+            auth.Conn.Close()
+            cSess.Close()
+        }
+    }()
+
+    return err
 }
