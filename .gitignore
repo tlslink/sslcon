@@ -1,5 +1,8 @@
 .idea/*
 !.idea/codeStyles
+!.idea/*.iml
+!.idea/modules.xml
+
 test.go
 vpnagent
 *.exe
