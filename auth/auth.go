@@ -12,6 +12,7 @@ import (
     "net/http"
     "strings"
     "text/template"
+    "time"
     "vpnagent/base"
     "vpnagent/proto"
     "vpnagent/session"
@@ -63,7 +64,7 @@ func InitAuth() error {
         InsecureSkipVerify: base.Cfg.InsecureSkipVerify,
     }
     var err error
-    Conn, err = tls.DialWithDialer(&net.Dialer{}, "tcp4", Prof.HostWithPort, &config)
+    Conn, err = tls.DialWithDialer(&net.Dialer{Timeout: 6 * time.Second}, "tcp4", Prof.HostWithPort, &config)
     if err != nil {
         return err
     }
