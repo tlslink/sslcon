@@ -1,10 +1,8 @@
 package session
 
 import (
-    "encoding/xml"
     "net/http"
     "strconv"
-    "strings"
     "sync"
     "sync/atomic"
     "time"
@@ -35,27 +33,25 @@ type stat struct {
 
 // ConnSession used for both TLS and DTLS
 type ConnSession struct {
-    ServerAddress              string
-    LocalAddress               string
-    Hostname                   string
-    TunName                    string
-    VPNAddress                 string // The IPv4 address of the client
-    VPNMask                    string // IPv4 netmask
-    DNS                        []string
-    MTU                        int
-    SplitInclude               []string
-    SplitExclude               []string
-    DynamicSplitExcludeDomains []string
-    DynamicSplitIncludeDomains []string
-    TLSCipherSuite             string
-    TLSDpdTime                 int // https://datatracker.ietf.org/doc/html/rfc3706
-    TLSKeepaliveTime           int
-    DTLSPort                   string
-    DTLSDpdTime                int
-    DTLSKeepaliveTime          int
-    DTLSId                     string `json:"-"` // used by the server to associate the DTLS channel with the CSTP channel
-    DTLSCipherSuite            string
-    Stat                       *stat
+    ServerAddress     string
+    LocalAddress      string
+    Hostname          string
+    TunName           string
+    VPNAddress        string // The IPv4 address of the client
+    VPNMask           string // IPv4 netmask
+    DNS               []string
+    MTU               int
+    SplitInclude      []string
+    SplitExclude      []string
+    TLSCipherSuite    string
+    TLSDpdTime        int // https://datatracker.ietf.org/doc/html/rfc3706
+    TLSKeepaliveTime  int
+    DTLSPort          string
+    DTLSDpdTime       int
+    DTLSKeepaliveTime int
+    DTLSId            string `json:"-"` // used by the server to associate the DTLS channel with the CSTP channel
+    DTLSCipherSuite   string
+    Stat              *stat
 
     closeOnce      sync.Once           `json:"-"`
     CloseChan      chan struct{}       `json:"-"`
@@ -113,24 +109,6 @@ func (sess *Session) NewConnSession(header *http.Header) *ConnSession {
     cSess.DTLSCipherSuite = header.Get("X-DTLS12-CipherSuite")
     cSess.DTLSDpdTime, _ = strconv.Atoi(header.Get("X-DTLS-DPD"))
     cSess.DTLSKeepaliveTime, _ = strconv.Atoi(header.Get("X-DTLS-Keepalive"))
-
-    // 客户端动态解析域名并设置路由非常影响体验，特别是被管理员滥用设置过多的域名情况下那将非常恶心
-    // 如果没有下发 dns 放到哪解析都可以，在下发 dns 的 情况下，vpn 建立前解析和建立后解析区别很大
-    // Go 网络库每隔5秒读取 /etc/resolv.conf，设置 dns 后立即解析域名是否会使用设置的 dns 有待确认
-    postAuth := header.Get("X-CSTP-Post-Auth-XML")
-    if postAuth != "" {
-        dtd := proto.DTD{}
-        err := xml.Unmarshal([]byte(postAuth), &dtd)
-        if err == nil {
-            if dtd.Config.Opaque.CustomAttr.DynamicSplitExcludeDomains != "" {
-                // 字符串最后多一个逗号，导致数组最后一个元素为 ""，不排除配置错误其它元素也为空的可能，go 没有直接删除容器元素的方法，这里不处理
-                cSess.DynamicSplitExcludeDomains = strings.Split(dtd.Config.Opaque.CustomAttr.DynamicSplitExcludeDomains, ",")
-            }
-            if dtd.Config.Opaque.CustomAttr.DynamicSplitIncludeDomains != "" {
-                cSess.DynamicSplitIncludeDomains = strings.Split(dtd.Config.Opaque.CustomAttr.DynamicSplitIncludeDomains, ",")
-            }
-        }
-    }
 
     return cSess
 }
