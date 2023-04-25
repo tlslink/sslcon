@@ -30,6 +30,7 @@ func main() {
             svc.InstallSvc()
         case "uninstall":
             svc.UninstallSvc()
+            // todo uninstall wintun driver
         case "version":
             // print to stderr, fmt.Print to stdout
             fmt.Print(base.AgentVersion)

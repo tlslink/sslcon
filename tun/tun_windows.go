@@ -9,12 +9,12 @@ import (
     "errors"
     "fmt"
     "golang.org/x/sys/windows"
+    "golang.zx2c4.com/wintun"
     "os"
     "sync"
     "sync/atomic"
     "time"
     _ "unsafe"
-    "vpnagent/tun/wintun"
 )
 
 const (
