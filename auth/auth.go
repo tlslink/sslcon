@@ -53,7 +53,7 @@ func init() {
     reqHeaders["X-Aggregate-Auth"] = "1"
 
     Prof.Scheme = "https://"
-    Prof.AppVersion = base.AgentVersion
+    Prof.AppVersion = base.Cfg.AgentVersion
 }
 
 // InitAuth 确定用户组和服务端认证地址 AuthPath

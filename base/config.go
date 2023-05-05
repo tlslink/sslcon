@@ -10,6 +10,8 @@ type ClientConfig struct {
     LogPath            string `json:"log_path"`
     InsecureSkipVerify bool   `json:"skip_verify"`
     CiscoCompat        bool   `json:"cisco_compat"`
+    AgentName          string `json:"agent_name"`
+    AgentVersion       string `json:"agent_version"`
 }
 
 // Interface 应该由外部接口设置
@@ -24,4 +26,6 @@ func initCfg() {
     Cfg.LogLevel = "Debug"
     Cfg.InsecureSkipVerify = true
     Cfg.CiscoCompat = true
+    Cfg.AgentName = "AnyLink Secure Client"
+    Cfg.AgentVersion = "0.2.0.6"
 }

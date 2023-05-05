@@ -26,9 +26,9 @@ func InArray(arr []string, str string) bool {
 // ocserv worker-http.c case HEADER_USER_AGENT 通过 strncasecmp() 函数比较前 n 个字符
 func SetCommonHeader(req *http.Request) {
     if base.Cfg.CiscoCompat {
-        req.Header.Set("User-Agent", "AnyConnect"+" "+runtime.GOOS+" "+base.AgentVersion)
+        req.Header.Set("User-Agent", "AnyConnect"+" "+runtime.GOOS+" "+base.Cfg.AgentVersion)
     } else {
-        req.Header.Set("User-Agent", base.AgentName+" "+runtime.GOOS+" "+base.AgentVersion)
+        req.Header.Set("User-Agent", base.Cfg.AgentName+" "+runtime.GOOS+" "+base.Cfg.AgentVersion)
     }
 }
 
