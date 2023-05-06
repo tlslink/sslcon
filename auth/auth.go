@@ -53,7 +53,6 @@ func init() {
     reqHeaders["X-Aggregate-Auth"] = "1"
 
     Prof.Scheme = "https://"
-    Prof.AppVersion = base.Cfg.AgentVersion
 }
 
 // InitAuth 确定用户组和服务端认证地址 AuthPath
@@ -78,6 +77,7 @@ func InitAuth() error {
     }
     Prof.AuthPath = dtd.Auth.Form.Action
     Prof.MacAddress = base.LocalInterface.Mac
+    Prof.AppVersion = base.Cfg.AgentVersion
 
     gc := len(dtd.Auth.Form.Groups)
     if gc == 1 {
