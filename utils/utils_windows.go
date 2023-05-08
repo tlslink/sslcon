@@ -63,18 +63,13 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
 
     // Windows 排除路由 metric 相对大小好像不起作用，但不影响效果
     if len(*SplitInclude) == 0 {
-        dst, _ = netip.ParsePrefix("0.0.0.0/0")
-        err = iface.AddRoute(dst, nextHopVPN, 5)
+        *SplitInclude = append(*SplitInclude, "0.0.0.0/0.0.0.0")
+    }
+    for _, ipMask := range *SplitInclude {
+        dst, _ = netip.ParsePrefix(IpMaskToCIDR(ipMask))
+        err = iface.AddRoute(dst, nextHopVPN, 6)
         if err != nil {
             return routingError(dst)
-        }
-    } else {
-        for _, ipMask := range *SplitInclude {
-            dst, _ = netip.ParsePrefix(IpMaskToCIDR(ipMask))
-            err = iface.AddRoute(dst, nextHopVPN, 6)
-            if err != nil {
-                return routingError(dst)
-            }
         }
     }
 

@@ -58,20 +58,14 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
     }
 
     if len(*SplitInclude) == 0 {
-        dst, _ = netlink.ParseIPNet("0.0.0.0/0")
-        route = netlink.Route{LinkIndex: ifaceIndex, Dst: dst}
+        *SplitInclude = append(*SplitInclude, "0.0.0.0/0.0.0.0")
+    }
+    for _, ipMask := range *SplitInclude {
+        dst, _ = netlink.ParseIPNet(IpMaskToCIDR(ipMask))
+        route = netlink.Route{LinkIndex: ifaceIndex, Dst: dst, Priority: 6}
         err = netlink.RouteAdd(&route)
         if err != nil {
             return routingError(dst)
-        }
-    } else {
-        for _, ipMask := range *SplitInclude {
-            dst, _ = netlink.ParseIPNet(IpMaskToCIDR(ipMask))
-            route = netlink.Route{LinkIndex: ifaceIndex, Dst: dst, Priority: 6}
-            err = netlink.RouteAdd(&route)
-            if err != nil {
-                return routingError(dst)
-            }
         }
     }
 
