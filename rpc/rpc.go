@@ -73,16 +73,19 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
     // request route
     switch req.ID.Num {
     case STAT:
-        if session.Sess.Connected {
+        if session.Sess.CSess != nil {
             _ = conn.Reply(ctx, req.ID, session.Sess.CSess.Stat)
             return
         }
         jError := jsonrpc2.Error{Code: 1, Message: disconnectedStr}
         _ = conn.ReplyWithError(ctx, req.ID, &jError)
     case STATUS:
-        // 等待 DTLS 隧道创建过程结束，无论隧道是否建立成功
-        <-session.Sess.CSess.DtlsSetupChan
-        if session.Sess.Connected {
+        if session.Sess.CSess.DTLSPort != "" {
+            // 等待 DTLS 隧道创建过程结束，无论隧道是否建立成功
+            <-session.Sess.CSess.DtlsSetupChan
+        }
+
+        if session.Sess.CSess != nil {
             _ = conn.Reply(ctx, req.ID, session.Sess.CSess)
             return
         }
@@ -90,7 +93,7 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
         _ = conn.ReplyWithError(ctx, req.ID, &jError)
     case CONNECT:
         // 启动时未连接，其它 UI 连接后再次调用
-        if session.Sess.Connected {
+        if session.Sess.CSess != nil {
             _ = conn.Reply(ctx, req.ID, connectedStr)
             return
         }
@@ -114,7 +117,7 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
         go monitor()
     case RECONNECT:
         // UI 未检测到活动网络发生变化或者网络变化后已经推送接口信息
-        if session.Sess.Connected {
+        if session.Sess.CSess != nil {
             _ = conn.Reply(ctx, req.ID, connectedStr)
             return
         }
@@ -129,7 +132,7 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
         _ = conn.Reply(ctx, req.ID, connectedStr)
         go monitor()
     case DISCONNECT:
-        if session.Sess.Connected {
+        if session.Sess.CSess != nil {
             DisConnect()
         }
         // may be exited normally by other clients

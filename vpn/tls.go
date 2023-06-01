@@ -29,7 +29,7 @@ func tlsChannel(conn *tls.Conn, bufR *bufio.Reader, cSess *session.ConnSession, 
     go payloadOutTLSToServer(conn, cSess)
 
     // Step 21 serverToPayloadIn
-    // 读取服务器返回的数据，调整格式，放入 cSess.PayloadIn，不再用子协程是为了能够退出 tlsChannel 协程
+    // 读取服务器返回的数据，调整格式，放入 cSess.PayloadIn
     for {
         // 重置超时限制
         if cSess.ResetTLSReadDead.Load().(bool) {
@@ -44,24 +44,9 @@ func tlsChannel(conn *tls.Conn, bufR *bufio.Reader, cSess *session.ConnSession, 
             return
         }
 
-        // base.Debug("tls server to payloadIn", "PType", pl.Data[6])
+        // base.Debug("tls server to payloadIn", "Type", pl.Data[6])
         // https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-03#section-2.2
         switch pl.Data[6] {
-        case 0x07: // KEEPALIVE
-            // base.Debug("tls receive KEEPALIVE")
-        case 0x05: // DISCONNECT
-            // base.Debug("tls receive DISCONNECT")
-            return
-        case 0x03: // DPD-REQ
-            // base.Debug("tls receive DPD-REQ")
-            pl.PType = 0x04
-            select {
-            case cSess.PayloadOutTLS <- pl:
-            case <-cSess.CloseChan:
-                return
-            }
-        case 0x04:
-            base.Debug("tls receive DPD-RESP")
         case 0x00: // DATA
             // base.Debug("tls receive DATA")
             // 获取数据长度
@@ -73,6 +58,15 @@ func tlsChannel(conn *tls.Conn, bufR *bufio.Reader, cSess *session.ConnSession, 
 
             select {
             case cSess.PayloadIn <- pl:
+            case <-cSess.CloseChan:
+                return
+            }
+        case 0x04:
+            base.Debug("tls receive DPD-RESP")
+        case 0x03: // DPD-REQ
+            pl.Type = 0x04
+            select {
+            case cSess.PayloadOutTLS <- pl:
             case <-cSess.CloseChan:
                 return
             }
@@ -102,8 +96,8 @@ func payloadOutTLSToServer(conn *tls.Conn, cSess *session.ConnSession) {
             return
         }
 
-        // base.Debug("tls payloadOut to server", "PType", pl.PType)
-        if pl.PType == 0x00 {
+        // base.Debug("tls payloadOut to server", "Type", pl.Type)
+        if pl.Type == 0x00 {
             // 获取数据长度
             l := len(pl.Data)
             // 先扩容 +8
@@ -117,7 +111,7 @@ func payloadOutTLSToServer(conn *tls.Conn, cSess *session.ConnSession) {
         } else {
             pl.Data = append(pl.Data[:0], proto.Header...)
             // 设置头类型
-            pl.Data[6] = pl.PType
+            pl.Data[6] = pl.Type
         }
         bytesSent, err = conn.Write(pl.Data)
         if err != nil {

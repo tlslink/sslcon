@@ -12,7 +12,6 @@ type DTD struct {
     Version              string         `xml:"version"`                     // 客户端版本号
     GroupAccess          string         `xml:"group-access"`                // 请求的地址
     GroupSelect          string         `xml:"group-select"`                // 选择的组名
-    SessionId            string         `xml:"session-id"`
     SessionToken         string         `xml:"session-token"`
     Auth                 auth           `xml:"auth"`
     DeviceId             deviceId       `xml:"device-id"`

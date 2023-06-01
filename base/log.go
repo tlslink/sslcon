@@ -53,7 +53,7 @@ func (lw *logWriter) newFile() {
             return
         }
     }
-    // 客户端不需要内容追加，每次连接重新生成干净日志，即使 root 权限，os.OpenFile 也不能打开其它用户文件，但能删除！
+    // 客户端不需要内容追加，每次重启客户端重新生成干净日志，即使 root 权限，os.OpenFile 也不能打开其它用户文件，但能删除！
     _ = os.Remove(lw.FileName)
     f, err := os.OpenFile(lw.FileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
     if err != nil {

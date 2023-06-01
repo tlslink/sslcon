@@ -10,9 +10,10 @@ var Header = []byte{
     0x00, // fixed to 0x00
 }
 
+// Payload 缓冲区数据结构
 type Payload struct {
-    PType byte // The available payload types are listed in Table 3
-    Data  []byte
+    Type byte // The available payload types
+    Data []byte
 }
 
 // https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-03#section-2.2
@@ -39,7 +40,7 @@ type Payload struct {
    +---------------------+---------------------------------------------+
 
 
-   The available payload types are listed in Table 3.
+   The available payload types.
    +---------------------+---------------------------------------------+
    |        Value        | Description                                 |
    +---------------------+---------------------------------------------+

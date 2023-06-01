@@ -90,7 +90,7 @@ func dtlsChannel(cSess *session.ConnSession) {
             return
         case 0x03: // DPD-REQ
             // base.Debug("dtls receive DPD-REQ")
-            pl.PType = 0x04
+            pl.Type = 0x04
             select {
             case cSess.PayloadOutDTLS <- pl:
             case <-dSess.CloseChan:
@@ -131,7 +131,7 @@ func payloadOutDTLSToServer(conn *dtls.Conn, dSess *session.DtlsSession, cSess *
         }
 
         // base.Debug("dtls payloadOut to server")
-        if pl.PType == 0x00 {
+        if pl.Type == 0x00 {
             // 获取数据长度
             l := len(pl.Data)
             // 先扩容 +1
@@ -139,10 +139,10 @@ func payloadOutDTLSToServer(conn *dtls.Conn, dSess *session.DtlsSession, cSess *
             // 数据后移
             copy(pl.Data[1:], pl.Data)
             // 添加头信息
-            pl.Data[0] = pl.PType
+            pl.Data[0] = pl.Type
         } else {
             // 设置头类型
-            pl.Data = append(pl.Data[:0], pl.PType)
+            pl.Data = append(pl.Data[:0], pl.Type)
         }
 
         bytesSent, err = conn.Write(pl.Data)

@@ -21,7 +21,7 @@ import (
 
 var (
     Prof         = &Profile{Initialized: false}
-    Conn         *tls.Conn
+    Conn         *tls.Conn // tls.Conn 是结构体，net.Conn 是接口，所以这里可以用指针类型
     BufR         *bufio.Reader
     reqHeaders   = make(map[string]string)
     WebVpnCookie string
@@ -70,8 +70,8 @@ func InitAuth() error {
     BufR = bufio.NewReader(Conn)
     // base.Info(Conn.ConnectionState().Version)
 
-    dtd := proto.DTD{}
-    err = tplPost(tplInit, "", &dtd)
+    dtd := new(proto.DTD)
+    err = tplPost(tplInit, "", dtd)
     if err != nil {
         return err
     }
@@ -94,16 +94,16 @@ func InitAuth() error {
 
 // PasswordAuth 认证成功后，服务端新建 ConnSession，并生成 SessionToken 或者通过 Header 返回 WebVpnCookie
 func PasswordAuth() error {
-    dtd := proto.DTD{}
+    dtd := new(proto.DTD)
     // 发送用户名或者用户名+密码
-    err := tplPost(tplAuthReply, Prof.AuthPath, &dtd)
+    err := tplPost(tplAuthReply, Prof.AuthPath, dtd)
     if err != nil {
         return err
     }
     // 兼容两步登陆，如必要则再次发送
     if dtd.Type == "auth-request" && dtd.Auth.Error.Value == "" {
-        dtd = proto.DTD{}
-        err = tplPost(tplAuthReply, Prof.AuthPath, &dtd)
+        dtd = new(proto.DTD)
+        err = tplPost(tplAuthReply, Prof.AuthPath, dtd)
         if err != nil {
             return err
         }
@@ -122,22 +122,22 @@ func PasswordAuth() error {
     if WebVpnCookie != "" {
         session.Sess.SessionToken = WebVpnCookie
     }
-    base.Debug("SessionToken=" + session.Sess.SessionToken)
+    base.Debug("SessionToken:" + session.Sess.SessionToken)
     return nil
 }
 
 // 渲染模板并发送请求
 func tplPost(typ int, path string, dtd *proto.DTD) error {
-    var tplBuffer bytes.Buffer
+    tplBuffer := new(bytes.Buffer)
     if typ == tplInit {
         t, _ := template.New("init").Parse(templateInit)
-        _ = t.Execute(&tplBuffer, Prof)
+        _ = t.Execute(tplBuffer, Prof)
     } else {
         t, _ := template.New("auth_reply").Parse(templateAuthReply)
-        _ = t.Execute(&tplBuffer, Prof)
+        _ = t.Execute(tplBuffer, Prof)
     }
 
-    req, _ := http.NewRequest("POST", Prof.Scheme+Prof.HostWithPort+path, &tplBuffer)
+    req, _ := http.NewRequest("POST", Prof.Scheme+Prof.HostWithPort+path, tplBuffer)
 
     utils.SetCommonHeader(req)
     for k, v := range reqHeaders {
@@ -168,7 +168,7 @@ func tplPost(typ int, path string, dtd *proto.DTD) error {
             base.Debug(string(body))
         }
         err = xml.Unmarshal(body, dtd)
-        if dtd.Type == "complete" {
+        if dtd.Type == "complete" && dtd.SessionToken == "" {
             // 兼容 ocserv
             cookies := resp.Cookies()
             if len(cookies) != 0 {

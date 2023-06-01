@@ -1,7 +1,6 @@
 package vpn
 
 import (
-    "fmt"
     "runtime"
     "vpnagent/base"
     "vpnagent/proto"
@@ -64,12 +63,12 @@ func tunToPayloadOut(dev tun.Device, cSess *session.ConnSession) {
         pl.Data = (pl.Data)[:n]
 
         // base.Debug("tunToPayloadOut")
-        if base.Cfg.LogLevel == "Debug" {
-            src, srcPort, dst, dstPort := utils.ResolvePacket(pl.Data)
-            if dst == "42.192.84.227" {
-                fmt.Println("client from", src, srcPort, "request target", dst, dstPort)
-            }
-        }
+        // if base.Cfg.LogLevel == "Debug" {
+        //     src, srcPort, dst, dstPort := utils.ResolvePacket(pl.Data)
+        //     if dst == "42.192.84.227" {
+        //         fmt.Println("client from", src, srcPort, "request target", dst, dstPort)
+        //     }
+        // }
 
         dSess := cSess.DtlsSession
         if dSess != nil {
@@ -93,7 +92,7 @@ func payloadInToTun(dev tun.Device, cSess *session.ConnSession) {
     // tun 设备写错误或者cSess.CloseChan
     defer func() {
         base.Info("payloadIn to tun exit")
-        // 可能由写错误触发，和 tunRead 一起，只要有一处确保退出 cSess 即可
+        // 可能由写错误触发，和 tunToPayloadOut 一起，只要有一处确保退出 cSess 即可，否则 tls 不会退出
         // 如果由外部触发，cSess.Close() 因为使用 sync.Once，所以没影响
         cSess.Close()
         _ = dev.Close()
@@ -118,12 +117,12 @@ func payloadInToTun(dev tun.Device, cSess *session.ConnSession) {
         }
 
         // base.Debug("payloadInToTun")
-        if base.Cfg.LogLevel == "Debug" {
-            src, srcPort, dst, dstPort := utils.ResolvePacket(pl.Data)
-            if src == "42.192.84.227" {
-                fmt.Println("target from", src, srcPort, "response to client", dst, dstPort)
-            }
-        }
+        // if base.Cfg.LogLevel == "Debug" {
+        //     src, srcPort, dst, dstPort := utils.ResolvePacket(pl.Data)
+        //     if src == "42.192.84.227" {
+        //         fmt.Println("target from", src, srcPort, "response to client", dst, dstPort)
+        //     }
+        // }
 
         // 释放由 serverToPayloadIn 申请的内存
         putPayloadBuffer(pl)

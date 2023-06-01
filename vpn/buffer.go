@@ -12,8 +12,8 @@ var pool = sync.Pool{
     New: func() interface{} {
         b := make([]byte, BufferSize)
         pl := proto.Payload{
-            PType: 0x00,
-            Data:  b,
+            Type: 0x00,
+            Data: b,
         }
         return &pl
     },
@@ -31,7 +31,7 @@ func putPayloadBuffer(pl *proto.Payload) {
         return
     }
 
-    pl.PType = 0x00
+    pl.Type = 0x00
     pl.Data = pl.Data[:BufferSize]
     pool.Put(pl)
 }

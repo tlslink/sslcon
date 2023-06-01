@@ -30,6 +30,7 @@ func SetCommonHeader(req *http.Request) {
     } else {
         req.Header.Set("User-Agent", base.Cfg.AgentName+" "+runtime.GOOS+" "+base.Cfg.AgentVersion)
     }
+    req.Header.Set("Content-Type", "application/xml")
 }
 
 func IpMask2CIDR(ip, mask string) string {

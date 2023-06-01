@@ -19,9 +19,8 @@ type Session struct {
     SessionToken    string
     PreMasterSecret []byte
 
-    Connected   bool
     ActiveClose bool
-    CloseChan   chan struct{} // 用于监听 TLS 通道是否关闭
+    CloseChan   chan struct{} // 用于通知所有 UI，ConnSession 已关闭
     CSess       *ConnSession
 }
 
@@ -86,7 +85,6 @@ func (sess *Session) NewConnSession(header *http.Header) *ConnSession {
     cSess.ResetTLSReadDead.Store(true) // 初始化读取超时定时器
     sess.CSess = cSess
 
-    sess.Connected = true
     sess.ActiveClose = false
     sess.CloseChan = make(chan struct{})
 
@@ -94,6 +92,7 @@ func (sess *Session) NewConnSession(header *http.Header) *ConnSession {
     cSess.VPNMask = header.Get("X-CSTP-Netmask")
     cSess.MTU, _ = strconv.Atoi(header.Get("X-CSTP-MTU"))
     cSess.DNS = header.Values("X-CSTP-DNS")
+    // 如果服务器下发空字符串，字符串数组不会为 nil，会导致解析ip时报错
     cSess.SplitInclude = header.Values("X-CSTP-Split-Include")
     cSess.SplitExclude = header.Values("X-CSTP-Split-Exclude")
     cSess.TLSDpdTime, _ = strconv.Atoi(header.Get("X-CSTP-DPD"))
@@ -138,12 +137,12 @@ func (cSess *ConnSession) DPDTimer() {
         tick := time.NewTicker(time.Duration(dpdTime) * time.Second)
 
         tlsDpd := proto.Payload{
-            PType: 0x03,
-            Data:  make([]byte, 0, 8),
+            Type: 0x03,
+            Data: make([]byte, 0, 8),
         }
         dtlsDpd := proto.Payload{
-            PType: 0x03,
-            Data:  make([]byte, 0, 1),
+            Type: 0x03,
+            Data: make([]byte, 0, 1),
         }
 
         for {
@@ -197,7 +196,6 @@ func (cSess *ConnSession) Close() {
         close(cSess.CloseChan)
         utils.ResetRoutes(cSess.ServerAddress, cSess.DNS, cSess.SplitExclude)
         Sess.CSess = nil
-        Sess.Connected = false
 
         close(Sess.CloseChan)
     })

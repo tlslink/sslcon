@@ -6,7 +6,6 @@ import (
     "encoding/hex"
     "fmt"
     "net/http"
-    "os"
     "strings"
     "vpnagent/auth"
     "vpnagent/base"
@@ -19,7 +18,6 @@ var (
 )
 
 func init() {
-    reqHeaders["X-CSTP-HostWithPort"], _ = os.Hostname()
     reqHeaders["X-CSTP-VPNAddress-Type"] = "IPv4"
     // Payload + 8 + 加密扩展位 + TCP或UDP头 + IP头 最好小于 1500，这里参考 AnyConnect 设置
     reqHeaders["X-CSTP-MTU"] = "1399"
