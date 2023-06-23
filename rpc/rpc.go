@@ -139,8 +139,6 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
         _ = conn.Reply(ctx, jsonrpc2.ID{Num: DISCONNECT, IsString: false}, disconnectedStr)
     case CONFIG:
         // 初始化配置
-        logLevel := base.Cfg.LogLevel
-        logPath := base.Cfg.LogPath
         err := json.Unmarshal(*req.Params, &base.Cfg)
         if err != nil {
             jError := jsonrpc2.Error{Code: 1, Message: err.Error()}
@@ -148,10 +146,8 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
             return
         }
         _ = conn.Reply(ctx, req.ID, "ready to connect")
-        // 重置 logger，修改其它配置不影响
-        if logLevel != base.Cfg.LogLevel || logPath != base.Cfg.LogPath {
-            base.InitLog()
-        }
+        // 每次重启客户端或者配置更改，重置 logger
+        base.InitLog()
     case INTERFACE:
         err := json.Unmarshal(*req.Params, base.LocalInterface)
         if err != nil {
