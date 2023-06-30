@@ -58,7 +58,7 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
     nextHopVPNGateway, _ := netip.ParseAddr(base.LocalInterface.Gateway)
     err = localInterface.AddRoute(dst, nextHopVPNGateway, 5)
     if err != nil {
-        return routingError(dst)
+        return routingError(dst, err)
     }
 
     // Windows 排除路由 metric 相对大小好像不起作用，但不影响效果
@@ -69,7 +69,11 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
         dst, _ = netip.ParsePrefix(IpMaskToCIDR(ipMask))
         err = iface.AddRoute(dst, nextHopVPN, 6)
         if err != nil {
-            return routingError(dst)
+            if strings.Contains(err.Error(), "already exists") {
+                continue
+            } else {
+                return routingError(dst, err)
+            }
         }
     }
 
@@ -78,7 +82,7 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
             dst, _ = netip.ParsePrefix(IpMaskToCIDR(ipMask))
             err = localInterface.AddRoute(dst, nextHopVPNGateway, 5)
             if err != nil {
-                return routingError(dst)
+                return routingError(dst, err)
             }
         }
     }
@@ -138,8 +142,8 @@ func SetMTU(ifname string, mtu int) error {
     return err
 }
 
-func routingError(dst netip.Prefix) error {
-    return fmt.Errorf("routing error: %s", dst.String())
+func routingError(dst netip.Prefix, err error) error {
+    return fmt.Errorf("routing error: %s %s", dst.String(), err)
 }
 
 func execCmd(cmdStrs []string) error {
