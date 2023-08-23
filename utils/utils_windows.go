@@ -123,6 +123,10 @@ func GetLocalInterface() error {
         }
     }
 
+    if primaryInterface == nil {
+        return fmt.Errorf("unable to find a valid network interface")
+    }
+
     base.Info("GetLocalInterface: ", primaryInterface.AdapterName(), primaryInterface.Description(),
         primaryInterface.FriendlyName(), primaryInterface.Ipv4Metric, primaryInterface.IfType)
 

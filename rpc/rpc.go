@@ -36,8 +36,8 @@ type handler struct{}
 func Setup() {
     go func() {
         http.HandleFunc("/rpc", rpc)
-        // 无法启动则退出服务或应用
-        base.Fatal(http.ListenAndServe(":6210", nil))
+        // 无法启动则退出服务或应用，监听本地不需要有效物理网卡
+        base.Fatal(http.ListenAndServe("127.0.0.1:6210", nil))
     }()
 }
 
@@ -70,6 +70,7 @@ func rpc(resp http.ResponseWriter, req *http.Request) {
 
 // Handle ID 即方法
 func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) {
+
     // request route
     switch req.ID.Num {
     case STAT:

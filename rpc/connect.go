@@ -23,11 +23,6 @@ func Connect() error {
         }
     }
 
-    return SetupTunnel()
-}
-
-// SetupTunnel 如果服务端重启断开连接，SessionToken 失效，所以重连即重新建立隧道
-func SetupTunnel() error {
     err := auth.InitAuth()
     // 少写几个 return err
     if err == nil {
@@ -35,9 +30,13 @@ func SetupTunnel() error {
         if err != nil {
             return err
         }
-        err = vpn.SetupTunnel()
     }
-    return err
+    return SetupTunnel()
+}
+
+// SetupTunnel 操作系统长时间睡眠后再自动连接会失败，仅用于短时间断线自动重连
+func SetupTunnel() error {
+    return vpn.SetupTunnel()
 }
 
 func DisConnect() {
