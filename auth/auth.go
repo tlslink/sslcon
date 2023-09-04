@@ -78,6 +78,9 @@ func InitAuth() error {
     Prof.AuthPath = dtd.Auth.Form.Action
     Prof.MacAddress = base.LocalInterface.Mac
     Prof.AppVersion = base.Cfg.AgentVersion
+    if base.Cfg.CiscoCompat {
+        Prof.AppVersion = base.Cfg.CiscoAgentVersion
+    }
 
     gc := len(dtd.Auth.Form.Groups)
     if gc == 1 {

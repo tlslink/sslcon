@@ -26,7 +26,7 @@ func InArray(arr []string, str string) bool {
 // ocserv worker-http.c case HEADER_USER_AGENT 通过 strncasecmp() 函数比较前 n 个字符
 func SetCommonHeader(req *http.Request) {
     if base.Cfg.CiscoCompat {
-        req.Header.Set("User-Agent", "AnyConnect"+" "+runtime.GOOS+" "+base.Cfg.AgentVersion)
+        req.Header.Set("User-Agent", "Cisco AnyConnect VPN Agent for "+FirstUpper(runtime.GOOS)+" "+base.Cfg.CiscoAgentVersion)
     } else {
         req.Header.Set("User-Agent", base.Cfg.AgentName+" "+runtime.GOOS+" "+base.Cfg.AgentVersion)
     }
@@ -92,4 +92,11 @@ func CopyFile(dstName, srcName string) (err error) {
         return err
     }
     return nil
+}
+
+func FirstUpper(s string) string {
+    if s == "" {
+        return ""
+    }
+    return strings.ToUpper(s[:1]) + s[1:]
 }
