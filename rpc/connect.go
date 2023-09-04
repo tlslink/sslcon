@@ -1,11 +1,8 @@
 package rpc
 
 import (
-    "fmt"
-    "net"
     "strings"
     "vpnagent/auth"
-    "vpnagent/base"
     "vpnagent/session"
     "vpnagent/utils"
     "vpnagent/vpn"
@@ -40,11 +37,6 @@ func SetupTunnel() error {
         if err != nil {
             return err
         }
-        // utils.GetLocalInterface 有可能得到错误的首选网卡信息，待稳定后这里应该多余
-        err = checkLocalInterface()
-        if err != nil {
-            return err
-        }
     }
     return vpn.SetupTunnel()
 }
@@ -54,29 +46,4 @@ func DisConnect() {
     if session.Sess.CSess != nil {
         session.Sess.CSess.Close()
     }
-}
-
-func checkLocalInterface() error {
-    ifaces, _ := net.Interfaces()
-    for _, iface := range ifaces {
-        addrs, err := iface.Addrs()
-        if err != nil {
-            return err
-        }
-        var ip net.IP
-        for _, addr := range addrs {
-            switch v := addr.(type) {
-            case *net.IPNet:
-                ip = v.IP
-            case *net.IPAddr:
-                ip = v.IP
-            }
-            ip = ip.To4()
-            // 验证首选 IP 是否存在
-            if ip != nil && ip.String() == base.LocalInterface.Ip4 {
-                return nil
-            }
-        }
-    }
-    return fmt.Errorf("unable to find a valid network interface")
 }
