@@ -15,6 +15,7 @@ type DTD struct {
     SessionToken         string         `xml:"session-token"`
     Auth                 auth           `xml:"auth"`
     DeviceId             deviceId       `xml:"device-id"`
+    Opaque               opaque         `xml:"opaque"`
     MacAddressList       macAddressList `xml:"mac-address-list"`
 }
 
@@ -43,6 +44,12 @@ type deviceId struct {
     PlatformVersion string `xml:"platform-version,attr"`
     UniqueId        string `xml:"unique-id,attr"`
     UniqueIdGlobal  string `xml:"unique-id-global,attr"`
+}
+
+type opaque struct {
+    TunnelGroup string `xml:"tunnel-group"`
+    GroupAlias  string `xml:"group-alias"`
+    ConfigHash  string `xml:"config-hash"`
 }
 
 type macAddressList struct {

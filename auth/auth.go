@@ -29,18 +29,22 @@ var (
 
 // Profile 模板变量字段必须导出，虽然全局，但每次连接都被重置
 type Profile struct {
-    Host       string `json:"host"`
-    Username   string `json:"username"`
-    Password   string `json:"password"`
-    Group      string `json:"group"`
-    MacAddress string
+    Host     string `json:"host"`
+    Username string `json:"username"`
+    Password string `json:"password"`
+    Group    string `json:"group"`
+
+    Initialized bool
+    AppVersion  string // for report to server in xml
 
     HostWithPort string
     Scheme       string
     AuthPath     string
 
-    AppVersion  string // for report to server in xml
-    Initialized bool
+    MacAddress  string
+    TunnelGroup string
+    GroupAlias  string
+    ConfigHash  string
 }
 
 const (
@@ -71,16 +75,21 @@ func InitAuth() error {
     // base.Info(Conn.ConnectionState().Version)
 
     dtd := new(proto.DTD)
+
+    Prof.AppVersion = base.Cfg.AgentVersion
+    if base.Cfg.CiscoCompat {
+        Prof.AppVersion = base.Cfg.CiscoAgentVersion
+    }
+    Prof.MacAddress = base.LocalInterface.Mac
+
     err = tplPost(tplInit, "", dtd)
     if err != nil {
         return err
     }
     Prof.AuthPath = dtd.Auth.Form.Action
-    Prof.MacAddress = base.LocalInterface.Mac
-    Prof.AppVersion = base.Cfg.AgentVersion
-    if base.Cfg.CiscoCompat {
-        Prof.AppVersion = base.Cfg.CiscoAgentVersion
-    }
+    Prof.TunnelGroup = dtd.Opaque.TunnelGroup
+    Prof.GroupAlias = dtd.Opaque.GroupAlias
+    Prof.ConfigHash = dtd.Opaque.ConfigHash
 
     gc := len(dtd.Auth.Form.Groups)
     if gc == 1 {
@@ -139,7 +148,9 @@ func tplPost(typ int, path string, dtd *proto.DTD) error {
         t, _ := template.New("auth_reply").Parse(templateAuthReply)
         _ = t.Execute(tplBuffer, Prof)
     }
-
+    if base.Cfg.LogLevel == "Debug" {
+        base.Debug(tplBuffer.String())
+    }
     req, _ := http.NewRequest("POST", Prof.Scheme+Prof.HostWithPort+path, tplBuffer)
 
     utils.SetCommonHeader(req)
@@ -161,15 +172,16 @@ func tplPost(typ int, path string, dtd *proto.DTD) error {
     }
     defer resp.Body.Close()
 
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        Conn.Close()
+        return err
+    }
+    if base.Cfg.LogLevel == "Debug" {
+        base.Debug(string(body))
+    }
+
     if resp.StatusCode == http.StatusOK {
-        body, err := io.ReadAll(resp.Body)
-        if err != nil {
-            Conn.Close()
-            return err
-        }
-        if base.Cfg.LogLevel == "Debug" {
-            base.Debug(string(body))
-        }
         err = xml.Unmarshal(body, dtd)
         if dtd.Type == "complete" && dtd.SessionToken == "" {
             // 兼容 ocserv
@@ -193,12 +205,19 @@ func tplPost(typ int, path string, dtd *proto.DTD) error {
 var templateInit = `<?xml version="1.0" encoding="UTF-8"?>
 <config-auth client="vpn" type="init" aggregate-auth-version="2">
     <version who="vpn">{{.AppVersion}}</version>
+    <device-id>dummy</device-id>
 </config-auth>`
 
 // https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-03#section-2.1.2.2
 var templateAuthReply = `<?xml version="1.0" encoding="UTF-8"?>
 <config-auth client="vpn" type="auth-reply" aggregate-auth-version="2">
     <version who="vpn">{{.AppVersion}}</version>
+    <device-id>dummy</device-id>
+    <opaque is-for="sg">
+        <tunnel-group>{{.TunnelGroup}}</tunnel-group>
+        <group-alias>{{.GroupAlias}}</group-alias>
+        <config-hash>{{.ConfigHash}}</config-hash>
+    </opaque>
     <mac-address-list>
         <mac-address public-interface="true">{{.MacAddress}}</mac-address>
     </mac-address-list>

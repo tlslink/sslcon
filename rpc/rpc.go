@@ -122,7 +122,7 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
             _ = conn.Reply(ctx, req.ID, connectedStr)
             return
         }
-        err := SetupTunnel()
+        err := SetupTunnel(true)
         if err != nil {
             base.Error(err)
             jError := jsonrpc2.Error{Code: 1, Message: err.Error()}
