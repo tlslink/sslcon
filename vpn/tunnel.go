@@ -41,11 +41,7 @@ func initTunnel() {
 
     // https://gitlab.com/openconnect/ocserv/-/blob/master/src/worker-http.c#L150
     // https://github.com/openconnect/openconnect/blob/master/gnutls-dtls.c#L75
-    // worker-http.c dtls_ciphersuite_st ciphersuites12[]   仅支持两种，AES128-GCM-SHA256 和 AES256-GCM-SHA384
-    // AES128-GCM-SHA256 返回的 ID 为 0x009c，因此判断为 0x00,0x9C	TLS_RSA_WITH_AES_128_GCM_SHA256
-    // https://www.rfc-editor.org/rfc/rfc5288.html or https://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-4
-    // 冒号分隔，对于 ocserv，如果设置 PSK-NEGOTIATE，这里无效，我们目前不支持 PSK
-    reqHeaders["X-DTLS12-CipherSuite"] = "ECDHE-ECDSA-AES128-GCM-SHA256:AES128-GCM-SHA256"
+    reqHeaders["X-DTLS12-CipherSuite"] = "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256"
 }
 
 // SetupTunnel initiates an HTTP CONNECT command to establish a VPN

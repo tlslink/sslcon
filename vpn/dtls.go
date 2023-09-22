@@ -8,7 +8,6 @@ import (
     "strconv"
     "time"
     "vpnagent/base"
-    "vpnagent/ciphersuite"
     "vpnagent/proto"
     "vpnagent/session"
 )
@@ -41,11 +40,7 @@ func dtlsChannel(cSess *session.ConnSession) {
         InsecureSkipVerify:   true,
         ExtendedMasterSecret: dtls.DisableExtendedMasterSecret,
         SessionStore:         &SessionStore{dtls.Session{ID: id, Secret: session.Sess.PreMasterSecret}},
-        CipherSuites:         []dtls.CipherSuiteID{dtls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256},
-        // 兼容 ocserv
-        CustomCipherSuites: func() []dtls.CipherSuite {
-            return []dtls.CipherSuite{&ciphersuite.TLSRsaWithAes128GcmSha256{}}
-        },
+        CipherSuites:         []dtls.CipherSuiteID{dtls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, dtls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256},
     }
     ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
     defer cancel()
@@ -59,6 +54,7 @@ func dtlsChannel(cSess *session.ConnSession) {
     dSess = cSess.NewDtlsSession() // 放到这里尽可能不影响 tun 对 dSess 的判断
     close(cSess.DtlsSetupChan)     // 成功建立 DTLS 隧道
 
+    cSess.DTLSCipherSuite = conn.ConnectionState().CipherSuite.String()
     base.Info("dtls channel negotiation succeeded")
 
     go payloadOutDTLSToServer(conn, dSess, cSess)
