@@ -153,9 +153,9 @@ func routingError(dst netip.Prefix, err error) error {
 func execCmd(cmdStrs []string) error {
     for _, cmdStr := range cmdStrs {
         cmd := exec.Command("cmd", "/C", cmdStr)
-        b, err := cmd.CombinedOutput()
+        stdoutStderr, err := cmd.CombinedOutput()
         if err != nil {
-            return fmt.Errorf("%s %s", string(b), cmd.String())
+            return fmt.Errorf("%s %s %s", err, cmd.String(), string(stdoutStderr))
         }
     }
     return nil
