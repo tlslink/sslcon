@@ -8,6 +8,7 @@ import (
     "github.com/sourcegraph/jsonrpc2"
     ws "github.com/sourcegraph/jsonrpc2/websocket"
     "net/http"
+    "runtime/debug"
     "vpnagent/auth"
     "vpnagent/base"
     "vpnagent/session"
@@ -70,10 +71,16 @@ func rpc(resp http.ResponseWriter, req *http.Request) {
 
 // Handle ID 即方法
 func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) {
+    defer func() {
+        if err := recover(); err != nil {
+            base.Error(string(debug.Stack()))
+        }
+    }()
 
     // request route
     switch req.ID.Num {
     case STAT:
+        // 未连接之前不应该调用这里
         if session.Sess.CSess != nil {
             _ = conn.Reply(ctx, req.ID, session.Sess.CSess.Stat)
             return
@@ -81,15 +88,19 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
         jError := jsonrpc2.Error{Code: 1, Message: disconnectedStr}
         _ = conn.ReplyWithError(ctx, req.ID, &jError)
     case STATUS:
-        if session.Sess.CSess.DTLSPort != "" {
-            // 等待 DTLS 隧道创建过程结束，无论隧道是否建立成功
-            <-session.Sess.CSess.DtlsSetupChan
+        // 未连接之前不应该调用这里
+        if session.Sess.CSess != nil {
+            if session.Sess.CSess.DTLSPort != "" {
+                // 等待 DTLS 隧道创建过程结束，无论隧道是否建立成功
+                <-session.Sess.CSess.DtlsSetupChan
+            }
+
+            if session.Sess.CSess != nil {
+                _ = conn.Reply(ctx, req.ID, session.Sess.CSess)
+                return
+            }
         }
 
-        if session.Sess.CSess != nil {
-            _ = conn.Reply(ctx, req.ID, session.Sess.CSess)
-            return
-        }
         jError := jsonrpc2.Error{Code: 1, Message: disconnectedStr}
         _ = conn.ReplyWithError(ctx, req.ID, &jError)
     case CONNECT:
