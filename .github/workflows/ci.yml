@@ -19,7 +19,8 @@ jobs:
         os: [ubuntu-20.04, windows-2019]
     steps:
     - uses: actions/checkout@v4
-
+      with:
+        submodules: 'recursive'
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
