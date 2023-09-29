@@ -91,14 +91,9 @@ func InitAuth() error {
     Prof.GroupAlias = dtd.Opaque.GroupAlias
     Prof.ConfigHash = dtd.Opaque.ConfigHash
 
-    gc := len(dtd.Auth.Form.Groups)
-    if gc == 1 {
-        // 适用于 group 参数为空，但服务端有唯一用户组的情况，重写 Prof.Group
-        Prof.Group = dtd.Auth.Form.Groups[0]
-    } else if gc > 1 {
-        if !utils.InArray(dtd.Auth.Form.Groups, Prof.Group) {
-            return fmt.Errorf("group error, available user groups are: %s", strings.Join(dtd.Auth.Form.Groups, " "))
-        }
+    gps := len(dtd.Auth.Form.Groups)
+    if gps != 0 && !utils.InArray(dtd.Auth.Form.Groups, Prof.Group) {
+        return fmt.Errorf("available user groups are: %s", strings.Join(dtd.Auth.Form.Groups, " "))
     }
 
     return nil
