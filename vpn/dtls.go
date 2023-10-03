@@ -39,10 +39,17 @@ func dtlsChannel(cSess *session.ConnSession) {
     config := &dtls.Config{
         InsecureSkipVerify:   true,
         ExtendedMasterSecret: dtls.DisableExtendedMasterSecret,
-        SessionStore:         &SessionStore{dtls.Session{ID: id, Secret: session.Sess.PreMasterSecret}},
         CipherSuites: []dtls.CipherSuiteID{
             dtls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-            dtls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256},
+            dtls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+            dtls.TLS_PSK_WITH_AES_128_GCM_SHA256,
+        },
+        SessionStore: &SessionStore{dtls.Session{ID: id, Secret: session.Sess.PreMasterSecret}},
+        // PSK: func(hint []byte) ([]byte, error) {
+        //     // return []byte{0xAB, 0xC1, 0x23}, nil
+        //     return id, nil
+        // },
+        // PSKIdentityHint: id,
     }
     ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
     defer cancel()

@@ -104,8 +104,6 @@ func (sess *Session) NewConnSession(header *http.Header) *ConnSession {
         cSess.DTLSId = header.Get("X-DTLS-App-ID")
     }
     cSess.DTLSPort = header.Get("X-DTLS-Port")
-    // dtls.ConnectionState 没有直接暴露出相关信息
-    cSess.DTLSCipherSuite = header.Get("X-DTLS12-CipherSuite")
     cSess.DTLSDpdTime, _ = strconv.Atoi(header.Get("X-DTLS-DPD"))
     cSess.DTLSKeepaliveTime, _ = strconv.Atoi(header.Get("X-DTLS-Keepalive"))
 
