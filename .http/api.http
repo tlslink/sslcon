@@ -1,0 +1,37 @@
+### connect
+// It is possible to specify client messages in request body. Use '===' to separate messages.
+// Add '=== wait-for-server' above a message to send it after a server response is received.
+// To wait for N responses, add '=== wait-for-server' N times.
+WEBSOCKET ws://127.0.0.1:6210/rpc
+Content-Type: application/json // We use it for highlighting
+
+===
+{
+  "jsonrpc": "2.0",
+  "method": "connect",
+  "params": {
+    "host": "{{host}}",
+    "username": "{{username}}",
+    "password": "{{password}}",
+    "group": "{{group}}"
+  },
+  "id": 2
+}
+
+=== wait-for-server
+{
+  "jsonrpc": "2.0",
+  "method": "status",
+  "id": 0
+}
+
+### disconnect
+WEBSOCKET ws://127.0.0.1:6210/rpc
+Content-Type: application/json
+
+===
+{
+  "jsonrpc": "2.0",
+  "method": "disconnect",
+  "id": 3
+}
