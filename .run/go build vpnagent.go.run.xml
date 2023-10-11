@@ -5,6 +5,7 @@
     <go_parameters value="-o vpnagent" />
     <sudo value="true" />
     <kind value="FILE" />
+    <package value="vpnagent" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$/vpnagent.go" />
     <method v="2" />

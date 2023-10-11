@@ -30,7 +30,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: 1.20.7
+        go-version: 1.20.10
     - name: Install dependencies
       run: go get .
     - name: Build
@@ -38,8 +38,10 @@ jobs:
       run: |
         if [ "${{ matrix.build }}" = "linux" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
+          go build -trimpath -ldflags "-s -w" -o cli cli.go
         elif [ "${{ matrix.build }}" = "windows" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent.exe vpnagent.go
+          go build -trimpath -ldflags "-s -w" -o cli.exe cli.go
         fi
     - name: Build archive
       shell: bash
@@ -48,13 +50,13 @@ jobs:
         cp LICENSE README.md archive/
         # ls -lR
         if [ "${{ matrix.build }}" = "windows" ]; then
-          cp vpnagent.exe wintun.dll ./archive/
+          cp vpnagent.exe cli.exe wintun.dll ./archive/
           cd archive
-          7z a "${{ matrix.archive-name }}" LICENSE README.md vpnagent.exe wintun.dll
+          7z a "${{ matrix.archive-name }}" LICENSE README.md vpnagent.exe cli.exe wintun.dll
         else
-          cp vpnagent ./archive/
+          cp vpnagent cli ./archive/
           cd archive
-          tar -czf "${{ matrix.archive-name }}" LICENSE README.md vpnagent
+          tar -czf "${{ matrix.archive-name }}" LICENSE README.md vpnagent cli
         fi
     - name: Upload archive
       uses: actions/upload-artifact@v3

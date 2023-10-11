@@ -1,3 +1,5 @@
+
+
 ## vpnagent
 
 This is a Golang implementation of the [OpenConnect VPN Protocol](https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-03) for client side development. 
@@ -12,6 +14,67 @@ Currently the following servers are supported,
 
 - [ocserv](https://gitlab.com/openconnect/ocserv)
 - [anylink](https://github.com/bjdgyc/anylink)
+
+## CLI
+
+```
+$ ./cli
+A CLI application that supports the OpenConnect SSL VPN protocol.
+For more information, please visit https://github.com/tlslink/vpnagent
+
+Usage:
+  cli [flags]
+  cli [command]
+
+Available Commands:
+  config      Set up VPN service
+  connect     Connect to the VPN server
+  disconnect  Disconnect from the VPN server
+  status      Get VPN connection information
+
+Flags:
+  -h, --help   help for cli
+
+Use "cli [command] --help" for more information about a command.
+```
+
+### install
+
+```shell
+sudo ./vpnagent install
+# or
+sudo ./vpnagent uninstall
+```
+the installed service on linux
+
+```
+sudo systemctl stop/start/restart AnyLink.service
+sudo systemctl disable/enable AnyLink.service
+```
+
+### connect
+
+```bash
+./cli connect --host test.com -u vpn -g default -p
+```
+
+### disconnect
+
+```
+./cli disconnect
+```
+
+### status
+
+```
+./cli status
+```
+
+### config
+
+```
+./cli config -l debug -d "/tmp"
+```
 
 ## APIs
 

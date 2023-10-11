@@ -146,9 +146,10 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
     case DISCONNECT:
         if session.Sess.CSess != nil {
             DisConnect()
+        } else {
+            jError := jsonrpc2.Error{Code: 1, Message: disconnectedStr}
+            _ = conn.ReplyWithError(ctx, req.ID, &jError)
         }
-        // may be exited normally by other clients
-        _ = conn.Reply(ctx, jsonrpc2.ID{Num: DISCONNECT, IsString: false}, disconnectedStr)
     case CONFIG:
         // 初始化配置
         err := json.Unmarshal(*req.Params, &base.Cfg)
