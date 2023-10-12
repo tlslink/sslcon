@@ -4,6 +4,7 @@ import (
     "fmt"
     "github.com/vishvananda/netlink"
     "net"
+    "os"
     "os/exec"
     "vpnagent/base"
 )
@@ -32,12 +33,16 @@ func ConfigInterface(TunName, VPNAddress, VPNMask string, DNS []string) error {
     // dns
     if len(DNS) > 0 {
         CopyFile("/tmp/resolv.conf.bak", "/etc/resolv.conf")
+
+        // OpenWrt 会将 127.0.0.1 写在最下面，影响其上面的解析
+        os.Remove("/etc/resolv.conf")
+        // time.Sleep(time.Millisecond)
+
         var dnsString string
         for _, dns := range DNS {
             dnsString += fmt.Sprintf("nameserver %s\n", dns)
         }
         NewRecord("/etc/resolv.conf").Prepend(dnsString)
-        // time.Sleep(time.Duration(6) * time.Second)
     }
 
     return err
@@ -50,6 +55,11 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
 
     ifaceIndex := iface.Attrs().Index
     localInterfaceIndex := localInterface.Attrs().Index
+
+    // 重置默认路由优先级，如 OpenWrt 默认优先级为 0
+    zero, _ := netlink.ParseIPNet("0.0.0.0/0")
+    _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero})
+    _ = netlink.RouteAdd(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero, Gw: gateway, Priority: 10})
 
     route := netlink.Route{LinkIndex: localInterfaceIndex, Dst: dst, Gw: gateway}
     err := netlink.RouteAdd(&route)
@@ -87,6 +97,13 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
 func ResetRoutes(ServerIP string, DNS, SplitExclude []string) {
     // routes
     localInterfaceIndex := localInterface.Attrs().Index
+
+    // 重置默认路由优先级
+    zero, _ := netlink.ParseIPNet("0.0.0.0/0")
+    gateway := net.ParseIP(base.LocalInterface.Gateway)
+    _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero})
+    _ = netlink.RouteAdd(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero, Gw: gateway, Priority: 0})
+
     dst, _ := netlink.ParseIPNet(ServerIP + "/32")
     _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: dst})
 
@@ -98,6 +115,7 @@ func ResetRoutes(ServerIP string, DNS, SplitExclude []string) {
     }
 
     // dns
+    // 软件崩溃会导致无法恢复 resolv.conf 从而无法上网，需要重启系统
     if len(DNS) > 0 {
         CopyFile("/etc/resolv.conf", "/tmp/resolv.conf.bak")
     }
