@@ -27,3 +27,5 @@ require (
 )
 
 replace github.com/pion/dtls/v2 => ./dtls
+
+replace github.com/kardianos/service v1.2.2 => github.com/cuonglm/service v0.0.0-20230322120818-ee0647d95905

@@ -45,11 +45,17 @@ sudo ./vpnagent install
 # or
 sudo ./vpnagent uninstall
 ```
-the installed service on linux
+the installed service on systemd linux
 
 ```
 sudo systemctl stop/start/restart AnyLink.service
 sudo systemctl disable/enable AnyLink.service
+```
+
+the installed service on OpenWrt
+
+```
+/etc/init.d/AnyLink stop/start/restart/status
 ```
 
 ### connect
