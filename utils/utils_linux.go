@@ -56,11 +56,6 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
     ifaceIndex := iface.Attrs().Index
     localInterfaceIndex := localInterface.Attrs().Index
 
-    // 重置默认路由优先级，如 OpenWrt 默认优先级为 0
-    zero, _ := netlink.ParseIPNet("0.0.0.0/0")
-    _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero})
-    _ = netlink.RouteAdd(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero, Gw: gateway, Priority: 10})
-
     route := netlink.Route{LinkIndex: localInterfaceIndex, Dst: dst, Gw: gateway}
     err := netlink.RouteAdd(&route)
     if err != nil {
@@ -69,7 +64,13 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
 
     if len(*SplitInclude) == 0 {
         *SplitInclude = append(*SplitInclude, "0.0.0.0/0.0.0.0")
+
+        // 全局模式，重置默认路由优先级，如 OpenWrt 默认优先级为 0
+        zero, _ := netlink.ParseIPNet("0.0.0.0/0")
+        _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero})
+        _ = netlink.RouteAdd(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero, Gw: gateway, Priority: 10})
     }
+
     for _, ipMask := range *SplitInclude {
         dst, _ = netlink.ParseIPNet(IpMaskToCIDR(ipMask))
         route = netlink.Route{LinkIndex: ifaceIndex, Dst: dst, Priority: 6}
@@ -94,21 +95,26 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
     return err
 }
 
-func ResetRoutes(ServerIP string, DNS, SplitExclude []string) {
+func ResetRoutes(ServerIP string, DNS []string, SplitInclude, SplitExclude *[]string) {
     // routes
     localInterfaceIndex := localInterface.Attrs().Index
 
-    // 重置默认路由优先级
-    zero, _ := netlink.ParseIPNet("0.0.0.0/0")
-    gateway := net.ParseIP(base.LocalInterface.Gateway)
-    _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero})
-    _ = netlink.RouteAdd(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero, Gw: gateway, Priority: 0})
+    for _, ipMask := range *SplitInclude {
+        if ipMask == "0.0.0.0/0.0.0.0" {
+            // 重置默认路由优先级
+            zero, _ := netlink.ParseIPNet("0.0.0.0/0")
+            gateway := net.ParseIP(base.LocalInterface.Gateway)
+            _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero})
+            _ = netlink.RouteAdd(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero, Gw: gateway, Priority: 0})
+            break
+        }
+    }
 
     dst, _ := netlink.ParseIPNet(ServerIP + "/32")
     _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: dst})
 
-    if len(SplitExclude) > 0 {
-        for _, ipMask := range SplitExclude {
+    if len(*SplitExclude) > 0 {
+        for _, ipMask := range *SplitExclude {
             dst, _ = netlink.ParseIPNet(IpMaskToCIDR(ipMask))
             _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: dst})
         }

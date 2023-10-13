@@ -192,7 +192,7 @@ func (cSess *ConnSession) Close() {
             cSess.DtlsSession.Close()
         }
         close(cSess.CloseChan)
-        utils.ResetRoutes(cSess.ServerAddress, cSess.DNS, cSess.SplitExclude)
+        utils.ResetRoutes(cSess.ServerAddress, cSess.DNS, &cSess.SplitInclude, &cSess.SplitExclude)
         Sess.CSess = nil
 
         close(Sess.CloseChan)
