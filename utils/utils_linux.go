@@ -64,7 +64,7 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
 
         // 全局模式，重置默认路由优先级，如 OpenWrt 默认优先级为 0
         zero, _ := netlink.ParseIPNet("0.0.0.0/0")
-        _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero})
+        delAllRoute(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero})
         _ = netlink.RouteAdd(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero, Gw: gateway, Priority: 10})
     }
 
@@ -102,7 +102,7 @@ func ResetRoutes(ServerIP string, DNS []string, SplitInclude, SplitExclude *[]st
             zero, _ := netlink.ParseIPNet("0.0.0.0/0")
             gateway := net.ParseIP(base.LocalInterface.Gateway)
             _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero})
-            _ = netlink.RouteAdd(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero, Gw: gateway, Priority: 0})
+            _ = netlink.RouteAdd(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero, Gw: gateway})
             break
         }
     }
@@ -143,6 +143,14 @@ func GetLocalInterface() error {
         return nil
     }
     return err
+}
+
+func delAllRoute(route *netlink.Route) {
+    err := netlink.RouteDel(route)
+    if err != nil {
+        return
+    }
+    delAllRoute(route)
 }
 
 func routingError(dst *net.IPNet, err error) error {
