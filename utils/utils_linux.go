@@ -39,7 +39,7 @@ func ConfigInterface(TunName, VPNAddress, VPNMask string, DNS []string) error {
         }
 
         // OpenWrt 会将 127.0.0.1 写在最下面，影响其上面的解析
-        NewRecord("/etc/resolv.conf").Write(dnsString, true)
+        NewRecord("/etc/resolv.conf").Write(dnsString, false)
     }
 
     return err

@@ -45,11 +45,9 @@ func (r *Record) Write(content string, prepend bool) error {
         if err != nil {
             return err
         }
-    } else {
-        r.Contents = []string{}
     }
 
-    f, err := os.OpenFile(r.Filename, os.O_CREATE|os.O_WRONLY, 0600)
+    f, err := os.OpenFile(r.Filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0777)
     if err != nil {
         return err
     }
