@@ -4,7 +4,6 @@ import (
     "fmt"
     "github.com/vishvananda/netlink"
     "net"
-    "os"
     "os/exec"
     "vpnagent/base"
 )
@@ -34,15 +33,13 @@ func ConfigInterface(TunName, VPNAddress, VPNMask string, DNS []string) error {
     if len(DNS) > 0 {
         CopyFile("/tmp/resolv.conf.bak", "/etc/resolv.conf")
 
-        // OpenWrt 会将 127.0.0.1 写在最下面，影响其上面的解析
-        os.Remove("/etc/resolv.conf")
-        // time.Sleep(time.Millisecond)
-
         var dnsString string
         for _, dns := range DNS {
             dnsString += fmt.Sprintf("nameserver %s\n", dns)
         }
-        NewRecord("/etc/resolv.conf").Prepend(dnsString)
+
+        // OpenWrt 会将 127.0.0.1 写在最下面，影响其上面的解析
+        NewRecord("/etc/resolv.conf").Write(dnsString, true)
     }
 
     return err

@@ -39,10 +39,14 @@ func (r *Record) readLines() error {
     return nil
 }
 
-func (r *Record) Prepend(content string) error {
-    err := r.readLines()
-    if err != nil {
-        return err
+func (r *Record) Write(content string, prepend bool) error {
+    if prepend {
+        err := r.readLines()
+        if err != nil {
+            return err
+        }
+    } else {
+        r.Contents = []string{}
     }
 
     f, err := os.OpenFile(r.Filename, os.O_CREATE|os.O_WRONLY, 0600)
@@ -53,10 +57,13 @@ func (r *Record) Prepend(content string) error {
 
     writer := bufio.NewWriter(f)
     writer.WriteString(fmt.Sprintf("%s\n", content))
-    for _, line := range r.Contents {
-        _, err = writer.WriteString(fmt.Sprintf("%s\n", line))
-        if err != nil {
-            return err
+
+    if prepend {
+        for _, line := range r.Contents {
+            _, err = writer.WriteString(fmt.Sprintf("%s\n", line))
+            if err != nil {
+                return err
+            }
         }
     }
 

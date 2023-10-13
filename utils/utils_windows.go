@@ -90,13 +90,13 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
     return err
 }
 
-func ResetRoutes(ServerIP string, DNS, SplitExclude []string) {
+func ResetRoutes(ServerIP string, DNS []string, SplitInclude, SplitExclude *[]string) {
     dst, _ := netip.ParsePrefix(ServerIP + "/32")
     nextHopVPNGateway, _ := netip.ParseAddr(base.LocalInterface.Gateway)
     localInterface.DeleteRoute(dst, nextHopVPNGateway)
 
-    if len(SplitExclude) > 0 {
-        for _, ipMask := range SplitExclude {
+    if len(*SplitExclude) > 0 {
+        for _, ipMask := range *SplitExclude {
             dst, _ = netip.ParsePrefix(IpMaskToCIDR(ipMask))
             localInterface.DeleteRoute(dst, nextHopVPNGateway)
         }
