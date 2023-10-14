@@ -29,10 +29,11 @@ var (
 
 // Profile 模板变量字段必须导出，虽然全局，但每次连接都被重置
 type Profile struct {
-    Host     string `json:"host"`
-    Username string `json:"username"`
-    Password string `json:"password"`
-    Group    string `json:"group"`
+    Host      string `json:"host"`
+    Username  string `json:"username"`
+    Password  string `json:"password"`
+    Group     string `json:"group"`
+    SecretKey string `json:"secret"`
 
     Initialized bool
     AppVersion  string // for report to server in xml
@@ -87,6 +88,9 @@ func InitAuth() error {
         return err
     }
     Prof.AuthPath = dtd.Auth.Form.Action
+    if Prof.AuthPath == "" {
+        Prof.AuthPath = "/"
+    }
     Prof.TunnelGroup = dtd.Opaque.TunnelGroup
     Prof.GroupAlias = dtd.Opaque.GroupAlias
     Prof.ConfigHash = dtd.Opaque.ConfigHash
@@ -146,7 +150,7 @@ func tplPost(typ int, path string, dtd *proto.DTD) error {
     if base.Cfg.LogLevel == "Debug" {
         base.Debug(tplBuffer.String())
     }
-    req, _ := http.NewRequest("POST", Prof.Scheme+Prof.HostWithPort+path, tplBuffer)
+    req, _ := http.NewRequest("POST", fmt.Sprintf("%s%s%s?%s", Prof.Scheme, Prof.HostWithPort, path, Prof.SecretKey), tplBuffer)
 
     utils.SetCommonHeader(req)
     for k, v := range reqHeaders {
