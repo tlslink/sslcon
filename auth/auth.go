@@ -150,7 +150,11 @@ func tplPost(typ int, path string, dtd *proto.DTD) error {
     if base.Cfg.LogLevel == "Debug" {
         base.Debug(tplBuffer.String())
     }
-    req, _ := http.NewRequest("POST", fmt.Sprintf("%s%s%s?%s", Prof.Scheme, Prof.HostWithPort, path, Prof.SecretKey), tplBuffer)
+    url := fmt.Sprintf("%s%s%s", Prof.Scheme, Prof.HostWithPort, path)
+    if Prof.SecretKey != "" {
+        url += "?" + Prof.SecretKey
+    }
+    req, _ := http.NewRequest("POST", url, tplBuffer)
 
     utils.SetCommonHeader(req)
     for k, v := range reqHeaders {
