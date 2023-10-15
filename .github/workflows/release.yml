@@ -15,7 +15,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [linux, linux-aarch64, windows]
+        build: [linux, linux-aarch64, linux-armv7, windows]
         include:
         - build: linux
           os: ubuntu-20.04
@@ -23,6 +23,9 @@ jobs:
         - build: linux-aarch64
           os: ubuntu-20.04
           archive-name: vpnagent-linux-aarch64.tar.gz
+        - build: linux-armv7
+          os: ubuntu-20.04
+          archive-name: vpnagent-linux-armv7.tar.gz
         - build: windows
           os: windows-2019
           archive-name: vpnagent-windows10-amd64.7z
@@ -45,6 +48,9 @@ jobs:
         elif [ "${{ matrix.build }}" = "linux-aarch64" ]; then
           GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
           GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o cli cli.go
+        elif [ "${{ matrix.build }}" = "linux-armv7" ]; then
+          GOOS=linux GOARM=7 GOARCH=arm go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
+          GOOS=linux GOARM=7 GOARCH=arm go build -trimpath -ldflags "-s -w" -o cli cli.go
         elif [ "${{ matrix.build }}" = "windows" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent.exe vpnagent.go
           go build -trimpath -ldflags "-s -w" -o cli.exe cli.go
