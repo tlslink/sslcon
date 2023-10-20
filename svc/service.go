@@ -3,6 +3,7 @@ package svc
 import (
     "fmt"
     "github.com/kardianos/service"
+    "runtime"
     "vpnagent/base"
     "vpnagent/rpc"
 )
@@ -12,13 +13,21 @@ type program struct{}
 var logger service.Logger
 
 var (
-    serviceConfig = &service.Config{
-        Name:        "AnyLink",
-        DisplayName: "AnyLink Agent",
-        Description: "AnyLink Secure Client Agent",
-    }
+    serviceConfig *service.Config
     prg = &program{}
 )
+
+func init()  {
+    svcName := "sslcon"
+    if runtime.GOOS == "windows" {
+        svcName = "SSLCon"
+    }
+    serviceConfig = &service.Config{
+        Name:        svcName,
+        DisplayName: "SSLCon VPN Agent",
+        Description: "SSLCon SSL VPN service Agent",
+    }
+}
 
 // Start should not block. Do the actual work async.
 func (p program) Start(s service.Service) error {

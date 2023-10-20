@@ -11,9 +11,9 @@ import (
 
 func setupTun(cSess *session.ConnSession) error {
     if runtime.GOOS == "windows" {
-        cSess.TunName = "AnyLink"
+        cSess.TunName = "SSLCon"
     } else {
-        cSess.TunName = "anylink"
+        cSess.TunName = "sslcon"
     }
     dev, err := tun.CreateTUN(cSess.TunName, cSess.MTU)
     if err != nil {

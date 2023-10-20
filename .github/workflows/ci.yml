@@ -32,8 +32,8 @@ jobs:
       run: |
         if [ "${{ matrix.os }}" = "ubuntu-20.04" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
-          go build -trimpath -ldflags "-s -w" -o cli cli.go
+          go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
         elif [ "${{ matrix.os }}" = "windows-2019" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent.exe vpnagent.go
-          go build -trimpath -ldflags "-s -w" -o cli.exe cli.go
+          go build -trimpath -ldflags "-s -w" -o sslcon.exe sslcon.go
         fi

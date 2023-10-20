@@ -45,7 +45,7 @@ type NativeTun struct {
 }
 
 var (
-    WintunTunnelType          = "AnyLink Secure"
+    WintunTunnelType          = "TLSLink Secure"
     WintunStaticRequestedGUID = &windows.GUID{
         0x0000000,
         0xFFFF,

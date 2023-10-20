@@ -1,30 +1,30 @@
 
 
-## vpnagent
+## sslcon
 
-This is a Golang implementation of the [OpenConnect VPN Protocol](https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-03) for client side development. 
+This is a Golang implementation of the [OpenConnect VPN Protocol](https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-04) for client side development. 
 
-For desktop OS, similar to Cisco Secure Client's vpnagentd, it should be run as a separate background service with root privileges, so that the front-end UI does not require an administrator authorization every time it starts. 
+The released binaries contain a command line program(sslcon) and a VPN service agent(vpnagent), the latter of which should be run as a separate background service with root privileges, so that the front-end UI does not require an administrator authorization every time it starts. 
 
-The API is exposed through the WebSocket and JSON-RPC 2.0 protocols. Anyone can use any front-end tool to implement their own GUI.
+The API is exposed through the WebSocket and JSON-RPC 2.0 protocols, so developers can easily customize a graphical interface that meets their needs.
 
-**[There](https://github.com/tlslink/anylink-client) is an example showing how to use this project.**
+**[There](https://github.com/tlslink/anylink-client) is a graphical client example showing how to use this project.**
 
 Currently the following servers are supported,
 
-- [ocserv](https://gitlab.com/openconnect/ocserv)
-- [anylink](https://github.com/bjdgyc/anylink)
+- [AnyLink](https://github.com/bjdgyc/anylink)
+- [OpenConnect VPN server](https://gitlab.com/openconnect/ocserv)
 
 ## CLI
 
 ```
-$ ./cli
+$ ./sslcon
 A CLI application that supports the OpenConnect SSL VPN protocol.
-For more information, please visit https://github.com/tlslink/vpnagent
+For more information, please visit https://github.com/tlslink/sslcon
 
 Usage:
-  cli [flags]
-  cli [command]
+  sslcon [flags]
+  sslcon [command]
 
 Available Commands:
   config      Set up VPN service
@@ -33,58 +33,58 @@ Available Commands:
   status      Get VPN connection information
 
 Flags:
-  -h, --help   help for cli
+  -h, --help   help for sslcon
 
-Use "cli [command] --help" for more information about a command.
+Use "sslcon [command] --help" for more information about a command.
 ```
 
 ### install
 
 ```shell
 sudo ./vpnagent install
-# or
+# uninstall or reinstall
 sudo ./vpnagent uninstall
 ```
 the installed service on systemd linux
 
 ```
-sudo systemctl stop/start/restart AnyLink.service
-sudo systemctl disable/enable AnyLink.service
+sudo systemctl stop/start/restart sslcon.service
+sudo systemctl disable/enable sslcon.service
 ```
 
 the installed service on OpenWrt
 
 ```
-/etc/init.d/AnyLink stop/start/restart/status
+/etc/init.d/sslcon stop/start/restart/status
 ```
 
 ### connect
 
 ```bash
-./cli connect --host test.com -u vpn -g default -p
+./sslcon connect --host test.com -u vpn -g default -p
 ```
 
 ### disconnect
 
 ```
-./cli disconnect
+./sslcon disconnect
 ```
 
 ### status
 
 ```
-./cli status
+./sslcon status
 ```
 
 ### config
 
 ```
-./cli config -l debug -d "/tmp"
+./sslcon config -l debug -d "/tmp"
 ```
 
 ## APIs
 
-You can use any WebSocket tool to test the [API](https://github.com/tlslink/vpnagent/blob/main/rpc/rpc.go).
+You can use any WebSocket tool to test the API.
 
 ws://127.0.0.1:6210/rpc
 

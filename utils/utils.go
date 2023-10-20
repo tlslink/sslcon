@@ -25,11 +25,10 @@ func InArray(arr []string, str string) bool {
 // SetCommonHeader 认证和建立隧道都需要的 HTTP Header
 // ocserv worker-http.c case HEADER_USER_AGENT 通过 strncasecmp() 函数比较前 n 个字符
 func SetCommonHeader(req *http.Request) {
-    if base.Cfg.CiscoCompat {
-        req.Header.Set("User-Agent", "Cisco AnyConnect VPN Agent for "+FirstUpper(runtime.GOOS)+" "+base.Cfg.CiscoAgentVersion)
-    } else {
-        req.Header.Set("User-Agent", base.Cfg.AgentName+" "+runtime.GOOS+" "+base.Cfg.AgentVersion)
+    if base.Cfg.CiscoCompat || base.Cfg.AgentName == "" {
+        base.Cfg.AgentName = "AnyConnect"
     }
+    req.Header.Set("User-Agent", fmt.Sprintf("%s %s %s", base.Cfg.AgentName, FirstUpper(runtime.GOOS), base.Cfg.AgentVersion))
     req.Header.Set("Content-Type", "application/xml")
 }
 

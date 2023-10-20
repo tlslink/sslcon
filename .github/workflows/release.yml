@@ -19,19 +19,19 @@ jobs:
         include:
         - build: linux
           os: ubuntu-20.04
-          archive-name: vpnagent-linux-amd64.tar.gz
+          archive-name: sslcon-linux-amd64.tar.gz
         - build: linux-aarch64
           os: ubuntu-20.04
-          archive-name: vpnagent-linux-aarch64.tar.gz
+          archive-name: sslcon-linux-aarch64.tar.gz
         - build: linux-armv7
           os: ubuntu-20.04
-          archive-name: vpnagent-linux-armv7.tar.gz
+          archive-name: sslcon-linux-armv7.tar.gz
         - build: linux-mipsle
           os: ubuntu-20.04
-          archive-name: vpnagent-linux-mipsle.tar.gz
+          archive-name: sslcon-linux-mipsle.tar.gz
         - build: windows
           os: windows-2019
-          archive-name: vpnagent-windows10-amd64.7z
+          archive-name: sslcon-windows10-amd64.7z
     steps:
     - uses: actions/checkout@v4
       with:
@@ -47,19 +47,19 @@ jobs:
       run: |
         if [ "${{ matrix.build }}" = "linux" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
-          go build -trimpath -ldflags "-s -w" -o cli cli.go
+          go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
         elif [ "${{ matrix.build }}" = "linux-aarch64" ]; then
           GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
-          GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o cli cli.go
+          GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
         elif [ "${{ matrix.build }}" = "linux-armv7" ]; then
           GOOS=linux GOARM=7 GOARCH=arm go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
-          GOOS=linux GOARM=7 GOARCH=arm go build -trimpath -ldflags "-s -w" -o cli cli.go
+          GOOS=linux GOARM=7 GOARCH=arm go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
         elif [ "${{ matrix.build }}" = "linux-mipsle" ]; then
           GOOS=linux GOARCH=mipsle go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
-          GOOS=linux GOARCH=mipsle go build -trimpath -ldflags "-s -w" -o cli cli.go
+          GOOS=linux GOARCH=mipsle go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
         elif [ "${{ matrix.build }}" = "windows" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent.exe vpnagent.go
-          go build -trimpath -ldflags "-s -w" -o cli.exe cli.go
+          go build -trimpath -ldflags "-s -w" -o sslcon.exe sslcon.go
         fi
     - name: Build archive
       shell: bash
@@ -68,13 +68,13 @@ jobs:
         cp LICENSE README.md archive/
         # ls -lR
         if [ "${{ matrix.build }}" = "windows" ]; then
-          cp vpnagent.exe cli.exe wintun.dll ./archive/
+          cp vpnagent.exe sslcon.exe wintun.dll ./archive/
           cd archive
-          7z a "${{ matrix.archive-name }}" LICENSE README.md vpnagent.exe cli.exe wintun.dll
+          7z a "${{ matrix.archive-name }}" LICENSE README.md vpnagent.exe sslcon.exe wintun.dll
         else
-          cp vpnagent cli ./archive/
+          cp vpnagent sslcon ./archive/
           cd archive
-          tar -czf "${{ matrix.archive-name }}" LICENSE README.md vpnagent cli
+          tar -czf "${{ matrix.archive-name }}" LICENSE README.md vpnagent sslcon
         fi
     - name: Upload archive
       uses: actions/upload-artifact@v3

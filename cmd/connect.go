@@ -15,6 +15,7 @@ var (
     username string
     password string
     group    string
+    secret   string
 )
 
 var connect = &cobra.Command{
@@ -55,6 +56,7 @@ var connect = &cobra.Command{
                     params["username"] = username
                     params["password"] = password
                     params["group"] = group
+                    params["secret"] = secret
 
                     result := simplejson.New()
                     err := rpcCall("connect", params, result, rpc.CONNECT)
@@ -80,6 +82,7 @@ func init() {
     connect.Flags().StringVarP(&username, "username", "u", "", "User name")
     connect.Flags().StringVarP(&password, "password", "p", "", "User password")
     connect.Flags().StringVarP(&group, "group", "g", "", "User group")
+    connect.Flags().StringVarP(&secret, "secret", "s", "", "Secret key")
 
     connect.Flags().StringVarP(&logLevel, "log_level", "l", "info", "Set the log level")
     connect.Flags().StringVarP(&logPath, "log_path", "d", os.TempDir(), "Set the log directory")

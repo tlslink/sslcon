@@ -78,9 +78,6 @@ func InitAuth() error {
     dtd := new(proto.DTD)
 
     Prof.AppVersion = base.Cfg.AgentVersion
-    if base.Cfg.CiscoCompat {
-        Prof.AppVersion = base.Cfg.CiscoAgentVersion
-    }
     Prof.MacAddress = base.LocalInterface.Mac
 
     err = tplPost(tplInit, "", dtd)
