@@ -1,10 +1,10 @@
 package session
 
 import (
+    "go.uber.org/atomic"
     "net/http"
     "strconv"
     "sync"
-    "sync/atomic"
     "time"
     "vpnagent/base"
     "vpnagent/proto"
@@ -58,12 +58,12 @@ type ConnSession struct {
     PayloadOutTLS  chan *proto.Payload `json:"-"`
     PayloadOutDTLS chan *proto.Payload `json:"-"`
 
-    DtlsConnected bool
+    DtlsConnected *atomic.Bool
     DtlsSetupChan chan struct{} `json:"-"`
-    DtlsSession   *DtlsSession  `json:"-"`
+    DSess         *DtlsSession  `json:"-"`
 
-    ResetTLSReadDead  atomic.Value `json:"-"`
-    ResetDTLSReadDead atomic.Value `json:"-"`
+    ResetTLSReadDead  *atomic.Bool `json:"-"`
+    ResetDTLSReadDead *atomic.Bool `json:"-"`
 }
 
 type DtlsSession struct {
@@ -73,16 +73,22 @@ type DtlsSession struct {
 
 func (sess *Session) NewConnSession(header *http.Header) *ConnSession {
     cSess := &ConnSession{
-        LocalAddress:   base.LocalInterface.Ip4,
-        Stat:           &stat{0, 0},
-        closeOnce:      sync.Once{},
-        CloseChan:      make(chan struct{}),
-        DtlsSetupChan:  make(chan struct{}),
-        PayloadIn:      make(chan *proto.Payload, 64),
-        PayloadOutTLS:  make(chan *proto.Payload, 64),
-        PayloadOutDTLS: make(chan *proto.Payload, 64),
+        LocalAddress:      base.LocalInterface.Ip4,
+        Stat:              &stat{0, 0},
+        closeOnce:         sync.Once{},
+        CloseChan:         make(chan struct{}),
+        DtlsSetupChan:     make(chan struct{}),
+        PayloadIn:         make(chan *proto.Payload, 64),
+        PayloadOutTLS:     make(chan *proto.Payload, 64),
+        PayloadOutDTLS:    make(chan *proto.Payload, 64),
+        DtlsConnected:     atomic.NewBool(false),
+        ResetTLSReadDead:  atomic.NewBool(true),
+        ResetDTLSReadDead: atomic.NewBool(true),
+        DSess: &DtlsSession{
+            closeOnce: sync.Once{},
+            CloseChan: make(chan struct{}),
+        },
     }
-    cSess.ResetTLSReadDead.Store(true) // 初始化读取超时定时器
     sess.CSess = cSess
 
     sess.ActiveClose = false
@@ -108,16 +114,6 @@ func (sess *Session) NewConnSession(header *http.Header) *ConnSession {
     cSess.DTLSKeepaliveTime, _ = strconv.Atoi(header.Get("X-DTLS-Keepalive"))
 
     return cSess
-}
-
-func (cSess *ConnSession) NewDtlsSession() *DtlsSession {
-    cSess.DtlsSession = &DtlsSession{
-        closeOnce: sync.Once{},
-        CloseChan: make(chan struct{}),
-    }
-    cSess.ResetDTLSReadDead.Store(true)
-    cSess.DtlsConnected = true
-    return cSess.DtlsSession
 }
 
 func (cSess *ConnSession) DPDTimer() {
@@ -151,7 +147,7 @@ func (cSess *ConnSession) DPDTimer() {
                 case cSess.PayloadOutTLS <- &tlsDpd:
                 default:
                 }
-                if cSess.DtlsSession != nil {
+                if cSess.DtlsConnected.Load() {
                     select {
                     case cSess.PayloadOutDTLS <- &dtlsDpd:
                     default:
@@ -188,8 +184,8 @@ func (cSess *ConnSession) ReadDeadTimer() {
 
 func (cSess *ConnSession) Close() {
     cSess.closeOnce.Do(func() {
-        if cSess.DtlsSession != nil {
-            cSess.DtlsSession.Close()
+        if cSess.DtlsConnected.Load() {
+            cSess.DSess.Close()
         }
         close(cSess.CloseChan)
         utils.ResetRoutes(cSess.ServerAddress, cSess.DNS, &cSess.SplitInclude, &cSess.SplitExclude)
@@ -203,8 +199,8 @@ func (dSess *DtlsSession) Close() {
     dSess.closeOnce.Do(func() {
         close(dSess.CloseChan)
         if Sess.CSess != nil {
-            Sess.CSess.DtlsConnected = false
-            Sess.CSess.DtlsSession = nil
+            Sess.CSess.DtlsConnected.Store(false)
+            Sess.CSess.DTLSCipherSuite = ""
         }
     })
 }

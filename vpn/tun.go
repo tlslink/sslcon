@@ -70,8 +70,8 @@ func tunToPayloadOut(dev tun.Device, cSess *session.ConnSession) {
         //     }
         // }
 
-        dSess := cSess.DtlsSession
-        if dSess != nil {
+        dSess := cSess.DSess
+        if cSess.DtlsConnected.Load() {
             select {
             case cSess.PayloadOutDTLS <- pl:
             case <-dSess.CloseChan:

@@ -32,7 +32,7 @@ func tlsChannel(conn *tls.Conn, bufR *bufio.Reader, cSess *session.ConnSession, 
     // 读取服务器返回的数据，调整格式，放入 cSess.PayloadIn
     for {
         // 重置超时限制
-        if cSess.ResetTLSReadDead.Load().(bool) {
+        if cSess.ResetTLSReadDead.Load() {
             _ = conn.SetReadDeadline(time.Now().Add(dead))
             cSess.ResetTLSReadDead.Store(false)
         }

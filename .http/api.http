@@ -13,7 +13,8 @@ Content-Type: application/json // We use it for highlighting
     "host": "{{host}}",
     "username": "{{username}}",
     "password": "{{password}}",
-    "group": "{{group}}"
+    "group": "{{group}}",
+    "secret": "{{secret}}"
   },
   "id": 2
 }

@@ -67,8 +67,9 @@ func dtlsChannel(cSess *session.ConnSession) {
         return
     }
 
-    dSess = cSess.NewDtlsSession() // 放到这里尽可能不影响 tun 对 dSess 的判断
-    close(cSess.DtlsSetupChan)     // 成功建立 DTLS 隧道
+    cSess.DtlsConnected.Store(true)
+    dSess = cSess.DSess
+    close(cSess.DtlsSetupChan) // 成功建立 DTLS 隧道
 
     if conn.ConnectionState().CipherSuiteID == ciphersuite.TLS_RSA_WITH_AES_128_GCM_SHA256 {
         cSess.DTLSCipherSuite = "TLS_RSA_WITH_AES_128_GCM_SHA256"
@@ -83,7 +84,7 @@ func dtlsChannel(cSess *session.ConnSession) {
     // 读取服务器返回的数据，调整格式，放入 cSess.PayloadIn，不再用子协程是为了能够退出 dtlsChannel 协程
     for {
         // 重置超时限制
-        if cSess.ResetDTLSReadDead.Load().(bool) {
+        if cSess.ResetDTLSReadDead.Load() {
             _ = conn.SetReadDeadline(time.Now().Add(dead))
             cSess.ResetDTLSReadDead.Store(false)
         }

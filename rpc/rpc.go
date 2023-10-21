@@ -180,8 +180,7 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 func monitor() {
     // 不考虑 DTLS 中途关闭情形
     <-session.Sess.CloseChan
-    ctx, cancel := context.WithCancel(context.Background())
-    defer cancel()
+    ctx := context.Background()
     for _, conn := range Clients {
         if session.Sess.ActiveClose {
             _ = conn.Reply(ctx, jsonrpc2.ID{Num: DISCONNECT, IsString: false}, disconnectedStr)
