@@ -7,6 +7,7 @@ import (
     "net"
     "net/http"
     "os"
+    "regexp"
     "runtime"
     "strings"
     "vpnagent/base"
@@ -98,4 +99,11 @@ func FirstUpper(s string) string {
         return ""
     }
     return strings.ToUpper(s[:1]) + s[1:]
+}
+
+func RemoveBetween(input, start, end string) string {
+    // 构建正则表达式模式，"(?s)" 包括换行符
+    pattern := "(?s)" + regexp.QuoteMeta(start) + ".*?" + regexp.QuoteMeta(end)
+    r := regexp.MustCompile(pattern)
+    return r.ReplaceAllString(input, "")
 }

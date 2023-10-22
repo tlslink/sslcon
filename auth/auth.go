@@ -145,7 +145,11 @@ func tplPost(typ int, path string, dtd *proto.DTD) error {
         _ = t.Execute(tplBuffer, Prof)
     }
     if base.Cfg.LogLevel == "Debug" {
-        base.Debug(tplBuffer.String())
+        post := tplBuffer.String()
+        if typ == tplAuthReply {
+            post = utils.RemoveBetween(post, "<auth>", "</auth>")
+        }
+        base.Debug(post)
     }
     url := fmt.Sprintf("%s%s%s", Prof.Scheme, Prof.HostWithPort, path)
     if Prof.SecretKey != "" {
