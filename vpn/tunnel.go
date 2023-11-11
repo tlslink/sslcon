@@ -41,7 +41,7 @@ func initTunnel() {
 
     // https://gitlab.com/openconnect/ocserv/-/blob/master/src/worker-http.c#L150
     // https://github.com/openconnect/openconnect/blob/master/gnutls-dtls.c#L75
-    reqHeaders["X-DTLS12-CipherSuite"] = "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:AES128-GCM-SHA256"
+    reqHeaders["X-DTLS12-CipherSuite"] = "ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:AES128-GCM-SHA256"
 }
 
 // SetupTunnel initiates an HTTP CONNECT command to establish a VPN
