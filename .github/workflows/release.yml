@@ -76,12 +76,6 @@ jobs:
           cd archive
           tar -czf "${{ matrix.archive-name }}" LICENSE README.md vpnagent sslcon
         fi
-    - name: Upload archive
-      uses: actions/upload-artifact@v3
-      with:
-        name: ${{ matrix.archive-name }}
-        path: archive/${{ matrix.archive-name }}
-        
     - name: Continuous release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/heads/')
