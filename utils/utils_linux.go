@@ -5,7 +5,7 @@ import (
     "github.com/vishvananda/netlink"
     "net"
     "os/exec"
-    "vpnagent/base"
+    "sslcon/base"
 )
 
 var (

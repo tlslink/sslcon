@@ -4,8 +4,8 @@ import (
     "fmt"
     "github.com/kardianos/service"
     "runtime"
-    "vpnagent/base"
-    "vpnagent/rpc"
+    "sslcon/base"
+    "sslcon/rpc"
 )
 
 type program struct{}
@@ -14,10 +14,10 @@ var logger service.Logger
 
 var (
     serviceConfig *service.Config
-    prg = &program{}
+    prg           = &program{}
 )
 
-func init()  {
+func init() {
     svcName := "sslcon"
     if runtime.GOOS == "windows" {
         svcName = "SSLCon"

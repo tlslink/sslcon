@@ -2,7 +2,7 @@
 
 package main
 
-import "vpnagent/cmd"
+import "sslcon/cmd"
 
 func main() {
     cmd.Execute()

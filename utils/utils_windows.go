@@ -8,8 +8,8 @@ import (
     "net/netip"
     "os/exec"
     "strings"
-    "vpnagent/base"
-    "vpnagent/tun"
+    "sslcon/base"
+    "sslcon/tun"
 )
 
 var (

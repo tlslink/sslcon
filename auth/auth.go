@@ -10,13 +10,13 @@ import (
     "io"
     "net"
     "net/http"
+    "sslcon/base"
+    "sslcon/proto"
+    "sslcon/session"
+    "sslcon/utils"
     "strings"
     "text/template"
     "time"
-    "vpnagent/base"
-    "vpnagent/proto"
-    "vpnagent/session"
-    "vpnagent/utils"
 )
 
 var (

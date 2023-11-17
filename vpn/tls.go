@@ -5,10 +5,10 @@ import (
     "crypto/tls"
     "encoding/binary"
     "net/http"
+    "sslcon/base"
+    "sslcon/proto"
+    "sslcon/session"
     "time"
-    "vpnagent/base"
-    "vpnagent/proto"
-    "vpnagent/session"
 )
 
 // 复用已有的 tls.Conn 和对应的 bufR

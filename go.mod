@@ -1,4 +1,4 @@
-module vpnagent
+module sslcon
 
 go 1.20
 

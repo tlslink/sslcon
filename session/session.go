@@ -3,12 +3,12 @@ package session
 import (
     "go.uber.org/atomic"
     "net/http"
+    "sslcon/base"
+    "sslcon/proto"
+    "sslcon/utils"
     "strconv"
     "sync"
     "time"
-    "vpnagent/base"
-    "vpnagent/proto"
-    "vpnagent/utils"
 )
 
 var (

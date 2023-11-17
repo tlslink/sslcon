@@ -4,8 +4,8 @@ import (
     "fmt"
     "github.com/spf13/cobra"
     "github.com/tlslink/simplejson"
+    "sslcon/rpc"
     "strings"
-    "vpnagent/rpc"
 )
 
 var status = &cobra.Command{

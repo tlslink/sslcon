@@ -6,11 +6,11 @@ import (
     "encoding/hex"
     "fmt"
     "net/http"
+    "sslcon/auth"
+    "sslcon/base"
+    "sslcon/session"
+    "sslcon/utils"
     "strings"
-    "vpnagent/auth"
-    "vpnagent/base"
-    "vpnagent/session"
-    "vpnagent/utils"
 )
 
 var (

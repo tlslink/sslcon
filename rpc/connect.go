@@ -1,11 +1,11 @@
 package rpc
 
 import (
+    "sslcon/auth"
+    "sslcon/session"
+    "sslcon/utils"
+    "sslcon/vpn"
     "strings"
-    "vpnagent/auth"
-    "vpnagent/session"
-    "vpnagent/utils"
-    "vpnagent/vpn"
 )
 
 // Connect 调用之前必须由前端填充 auth.Prof，建议填充 base.Interface

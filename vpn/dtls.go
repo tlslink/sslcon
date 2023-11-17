@@ -5,12 +5,12 @@ import (
     "encoding/hex"
     "github.com/pion/dtls/v2"
     "net"
+    "sslcon/base"
+    "sslcon/ciphersuite"
+    "sslcon/proto"
+    "sslcon/session"
     "strconv"
     "time"
-    "vpnagent/base"
-    "vpnagent/ciphersuite"
-    "vpnagent/proto"
-    "vpnagent/session"
 )
 
 // 新建 dtls.Conn

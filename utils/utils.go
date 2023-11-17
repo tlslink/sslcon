@@ -9,9 +9,9 @@ import (
     "os"
     "regexp"
     "runtime"
+    "sslcon/base"
+    "sslcon/utils/waterutil"
     "strings"
-    "vpnagent/base"
-    "vpnagent/utils/waterutil"
 )
 
 func InArray(arr []string, str string) bool {

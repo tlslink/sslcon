@@ -9,9 +9,9 @@ import (
     ws "github.com/sourcegraph/jsonrpc2/websocket"
     "net/http"
     "runtime/debug"
-    "vpnagent/auth"
-    "vpnagent/base"
-    "vpnagent/session"
+    "sslcon/auth"
+    "sslcon/base"
+    "sslcon/session"
 )
 
 const (

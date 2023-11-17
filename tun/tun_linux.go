@@ -20,7 +20,7 @@ import (
     "golang.org/x/net/ipv6"
     "golang.org/x/sys/unix"
 
-    "vpnagent/rwcancel"
+    "sslcon/rwcancel"
 )
 
 const (

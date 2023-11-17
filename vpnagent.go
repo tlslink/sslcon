@@ -7,10 +7,10 @@ import (
     "github.com/kardianos/service"
     "os"
     "os/signal"
+    "sslcon/base"
+    "sslcon/rpc"
+    "sslcon/svc"
     "syscall"
-    "vpnagent/base"
-    "vpnagent/rpc"
-    "vpnagent/svc"
 )
 
 func main() {

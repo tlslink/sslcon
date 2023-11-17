@@ -6,8 +6,8 @@ import (
     "github.com/tlslink/simplejson"
     "golang.org/x/crypto/ssh/terminal"
     "os"
+    "sslcon/rpc"
     "strings"
-    "vpnagent/rpc"
 )
 
 var (

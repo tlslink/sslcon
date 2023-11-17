@@ -2,11 +2,11 @@ package vpn
 
 import (
     "runtime"
-    "vpnagent/base"
-    "vpnagent/proto"
-    "vpnagent/session"
-    "vpnagent/tun"
-    "vpnagent/utils"
+    "sslcon/base"
+    "sslcon/proto"
+    "sslcon/session"
+    "sslcon/tun"
+    "sslcon/utils"
 )
 
 func setupTun(cSess *session.ConnSession) error {
