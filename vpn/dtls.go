@@ -40,13 +40,20 @@ func dtlsChannel(cSess *session.ConnSession) {
     config := &dtls.Config{
         InsecureSkipVerify:   true,
         ExtendedMasterSecret: dtls.DisableExtendedMasterSecret,
-        CipherSuites: []dtls.CipherSuiteID{
-            dtls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-            dtls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-            dtls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-            dtls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-            dtls.TLS_PSK_WITH_AES_128_GCM_SHA256,
-        },
+        CipherSuites: func() []dtls.CipherSuiteID {
+            switch cSess.DTLSCipherSuite {
+            case "ECDHE-ECDSA-AES128-GCM-SHA256":
+                return []dtls.CipherSuiteID{dtls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256}
+            case "ECDHE-RSA-AES128-GCM-SHA256":
+                return []dtls.CipherSuiteID{dtls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256}
+            case "ECDHE-ECDSA-AES256-GCM-SHA384":
+                return []dtls.CipherSuiteID{dtls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384}
+            case "ECDHE-RSA-AES256-GCM-SHA384":
+                return []dtls.CipherSuiteID{dtls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384}
+            default:
+                return []dtls.CipherSuiteID{dtls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256}
+            }
+        }(),
         // 兼容旧版本 ocserv
         CustomCipherSuites: func() []dtls.CipherSuite {
             return []dtls.CipherSuite{&ciphersuite.TLSRsaWithAes128GcmSha256{}}

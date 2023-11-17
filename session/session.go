@@ -112,6 +112,7 @@ func (sess *Session) NewConnSession(header *http.Header) *ConnSession {
     cSess.DTLSPort = header.Get("X-DTLS-Port")
     cSess.DTLSDpdTime, _ = strconv.Atoi(header.Get("X-DTLS-DPD"))
     cSess.DTLSKeepaliveTime, _ = strconv.Atoi(header.Get("X-DTLS-Keepalive"))
+    cSess.DTLSCipherSuite = header.Get("X-DTLS12-CipherSuite") // 连接前后格式不同
 
     return cSess
 }
