@@ -1,4 +1,4 @@
-package utils
+package vpnc
 
 import (
     "fmt"
@@ -6,6 +6,8 @@ import (
     "net"
     "os/exec"
     "sslcon/base"
+    "sslcon/session"
+    "sslcon/utils"
 )
 
 var (
@@ -13,9 +15,9 @@ var (
     iface          netlink.Link
 )
 
-func ConfigInterface(TunName, VPNAddress, VPNMask string, DNS []string) error {
+func ConfigInterface(cSess *session.ConnSession) error {
     var err error
-    iface, err = netlink.LinkByName(TunName)
+    iface, err = netlink.LinkByName(cSess.TunName)
     if err != nil {
         return err
     }
@@ -23,31 +25,31 @@ func ConfigInterface(TunName, VPNAddress, VPNMask string, DNS []string) error {
     _ = netlink.LinkSetUp(iface)
     _ = netlink.LinkSetMulticastOff(iface)
 
-    addr, _ := netlink.ParseAddr(IpMask2CIDR(VPNAddress, VPNMask))
+    addr, _ := netlink.ParseAddr(utils.IpMask2CIDR(cSess.VPNAddress, cSess.VPNMask))
     err = netlink.AddrAdd(iface, addr)
     if err != nil {
         return err
     }
 
     // dns
-    if len(DNS) > 0 {
-        CopyFile("/tmp/resolv.conf.bak", "/etc/resolv.conf")
+    if len(cSess.DNS) > 0 {
+        utils.CopyFile("/tmp/resolv.conf.bak", "/etc/resolv.conf")
 
         var dnsString string
-        for _, dns := range DNS {
+        for _, dns := range cSess.DNS {
             dnsString += fmt.Sprintf("nameserver %s\n", dns)
         }
 
         // OpenWrt 会将 127.0.0.1 写在最下面，影响其上面的解析
-        NewRecord("/etc/resolv.conf").Write(dnsString, false)
+        utils.NewRecord("/etc/resolv.conf").Write(dnsString, false)
     }
 
     return err
 }
 
-func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
+func SetRoutes(cSess *session.ConnSession) error {
     // routes
-    dst, _ := netlink.ParseIPNet(ServerIP + "/32")
+    dst, _ := netlink.ParseIPNet(cSess.ServerAddress + "/32")
     gateway := net.ParseIP(base.LocalInterface.Gateway)
 
     ifaceIndex := iface.Attrs().Index
@@ -59,8 +61,8 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
         return routingError(dst, err)
     }
 
-    if len(*SplitInclude) == 0 {
-        *SplitInclude = append(*SplitInclude, "0.0.0.0/0.0.0.0")
+    if len(cSess.SplitInclude) == 0 {
+        cSess.SplitInclude = append(cSess.SplitInclude, "0.0.0.0/0.0.0.0")
 
         // 全局模式，重置默认路由优先级，如 OpenWrt 默认优先级为 0
         zero, _ := netlink.ParseIPNet("0.0.0.0/0")
@@ -68,8 +70,8 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
         _ = netlink.RouteAdd(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero, Gw: gateway, Priority: 10})
     }
 
-    for _, ipMask := range *SplitInclude {
-        dst, _ = netlink.ParseIPNet(IpMaskToCIDR(ipMask))
+    for _, ipMask := range cSess.SplitInclude {
+        dst, _ = netlink.ParseIPNet(utils.IpMaskToCIDR(ipMask))
         route = netlink.Route{LinkIndex: ifaceIndex, Dst: dst, Priority: 6}
         err = netlink.RouteAdd(&route)
         if err != nil {
@@ -78,9 +80,9 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
     }
 
     // 支持在 SplitInclude 网段中排除某个路由
-    if len(*SplitExclude) > 0 {
-        for _, ipMask := range *SplitExclude {
-            dst, _ = netlink.ParseIPNet(IpMaskToCIDR(ipMask))
+    if len(cSess.SplitExclude) > 0 {
+        for _, ipMask := range cSess.SplitExclude {
+            dst, _ = netlink.ParseIPNet(utils.IpMaskToCIDR(ipMask))
             route = netlink.Route{LinkIndex: localInterfaceIndex, Dst: dst, Gw: gateway, Priority: 5}
             err = netlink.RouteAdd(&route)
             if err != nil {
@@ -92,11 +94,11 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
     return err
 }
 
-func ResetRoutes(ServerIP string, DNS []string, SplitInclude, SplitExclude *[]string) {
+func ResetRoutes(cSess *session.ConnSession) {
     // routes
     localInterfaceIndex := localInterface.Attrs().Index
 
-    for _, ipMask := range *SplitInclude {
+    for _, ipMask := range cSess.SplitInclude {
         if ipMask == "0.0.0.0/0.0.0.0" {
             // 重置默认路由优先级
             zero, _ := netlink.ParseIPNet("0.0.0.0/0")
@@ -107,20 +109,20 @@ func ResetRoutes(ServerIP string, DNS []string, SplitInclude, SplitExclude *[]st
         }
     }
 
-    dst, _ := netlink.ParseIPNet(ServerIP + "/32")
+    dst, _ := netlink.ParseIPNet(cSess.ServerAddress + "/32")
     _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: dst})
 
-    if len(*SplitExclude) > 0 {
-        for _, ipMask := range *SplitExclude {
-            dst, _ = netlink.ParseIPNet(IpMaskToCIDR(ipMask))
+    if len(cSess.SplitExclude) > 0 {
+        for _, ipMask := range cSess.SplitExclude {
+            dst, _ = netlink.ParseIPNet(utils.IpMaskToCIDR(ipMask))
             _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: dst})
         }
     }
 
     // dns
     // 软件崩溃会导致无法恢复 resolv.conf 从而无法上网，需要重启系统
-    if len(DNS) > 0 {
-        CopyFile("/etc/resolv.conf", "/tmp/resolv.conf.bak")
+    if len(cSess.DNS) > 0 {
+        utils.CopyFile("/etc/resolv.conf", "/tmp/resolv.conf.bak")
     }
 }
 
@@ -139,7 +141,7 @@ func GetLocalInterface() error {
         base.LocalInterface.Gateway = route.Gw.String()
         base.LocalInterface.Mac = localInterface.Attrs().HardwareAddr.String()
 
-        base.Info("GetLocalInterface: ", *base.LocalInterface)
+        base.Info("GetLocalInterface:", fmt.Sprintf("%+v", *base.LocalInterface))
         return nil
     }
     return err

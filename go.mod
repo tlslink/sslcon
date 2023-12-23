@@ -1,9 +1,10 @@
 module sslcon
 
-go 1.20
+go 1.21
 
 require (
 	github.com/gorilla/websocket v1.5.0
+	github.com/jackpal/gateway v1.0.13
 	github.com/kardianos/service v1.2.2
 	github.com/pion/dtls/v2 v2.2.7
 	github.com/sourcegraph/jsonrpc2 v0.2.0
@@ -19,12 +20,17 @@ require (
 )
 
 require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/transport/v3 v3.0.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
+	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae // indirect
 	golang.org/x/term v0.13.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/pion/dtls/v2 => ./dtls

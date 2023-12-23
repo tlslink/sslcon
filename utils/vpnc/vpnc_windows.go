@@ -1,4 +1,4 @@
-package utils
+package vpnc
 
 import (
     "fmt"
@@ -7,9 +7,11 @@ import (
     "net"
     "net/netip"
     "os/exec"
-    "strings"
     "sslcon/base"
+    "sslcon/session"
     "sslcon/tun"
+    "sslcon/utils"
+    "strings"
 )
 
 var (
@@ -18,9 +20,9 @@ var (
     nextHopVPN     netip.Addr
 )
 
-func ConfigInterface(TunName, VPNAddress, VPNMask string, DNS []string) error {
+func ConfigInterface(cSess *session.ConnSession) error {
     mtu, _ := tun.NativeTunDevice.MTU()
-    err := SetMTU(TunName, mtu)
+    err := SetMTU(cSess.TunName, mtu)
     if err != nil {
         return err
     }
@@ -30,8 +32,8 @@ func ConfigInterface(TunName, VPNAddress, VPNMask string, DNS []string) error {
     // ip address
     iface.FlushIPAddresses(windows.AF_UNSPEC)
 
-    nextHopVPN, _ = netip.ParseAddr(VPNAddress)
-    prefixVPN, _ := netip.ParsePrefix(IpMask2CIDR(VPNAddress, VPNMask))
+    nextHopVPN, _ = netip.ParseAddr(cSess.VPNAddress)
+    prefixVPN, _ := netip.ParsePrefix(utils.IpMask2CIDR(cSess.VPNAddress, cSess.VPNMask))
     err = iface.SetIPAddressesForFamily(windows.AF_INET, []netip.Prefix{prefixVPN})
     if err != nil {
         return err
@@ -39,7 +41,7 @@ func ConfigInterface(TunName, VPNAddress, VPNMask string, DNS []string) error {
 
     // dns
     var servers []netip.Addr
-    for _, dns := range DNS {
+    for _, dns := range cSess.DNS {
         addr, _ := netip.ParseAddr(dns)
         servers = append(servers, addr)
     }
@@ -52,9 +54,9 @@ func ConfigInterface(TunName, VPNAddress, VPNMask string, DNS []string) error {
     return nil
 }
 
-func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
+func SetRoutes(cSess *session.ConnSession) error {
     // routes
-    dst, err := netip.ParsePrefix(ServerIP + "/32")
+    dst, err := netip.ParsePrefix(cSess.ServerAddress + "/32")
     nextHopVPNGateway, _ := netip.ParseAddr(base.LocalInterface.Gateway)
     err = localInterface.AddRoute(dst, nextHopVPNGateway, 5)
     if err != nil {
@@ -62,11 +64,11 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
     }
 
     // Windows 排除路由 metric 相对大小好像不起作用，但不影响效果
-    if len(*SplitInclude) == 0 {
-        *SplitInclude = append(*SplitInclude, "0.0.0.0/0.0.0.0")
+    if len(cSess.SplitInclude) == 0 {
+        cSess.SplitInclude = append(cSess.SplitInclude, "0.0.0.0/0.0.0.0")
     }
-    for _, ipMask := range *SplitInclude {
-        dst, _ = netip.ParsePrefix(IpMaskToCIDR(ipMask))
+    for _, ipMask := range cSess.SplitInclude {
+        dst, _ = netip.ParsePrefix(utils.IpMaskToCIDR(ipMask))
         err = iface.AddRoute(dst, nextHopVPN, 6)
         if err != nil {
             if strings.Contains(err.Error(), "already exists") {
@@ -77,9 +79,9 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
         }
     }
 
-    if len(*SplitExclude) > 0 {
-        for _, ipMask := range *SplitExclude {
-            dst, _ = netip.ParsePrefix(IpMaskToCIDR(ipMask))
+    if len(cSess.SplitExclude) > 0 {
+        for _, ipMask := range cSess.SplitExclude {
+            dst, _ = netip.ParsePrefix(utils.IpMaskToCIDR(ipMask))
             err = localInterface.AddRoute(dst, nextHopVPNGateway, 5)
             if err != nil {
                 return routingError(dst, err)
@@ -90,14 +92,14 @@ func SetRoutes(ServerIP string, SplitInclude, SplitExclude *[]string) error {
     return err
 }
 
-func ResetRoutes(ServerIP string, DNS []string, SplitInclude, SplitExclude *[]string) {
-    dst, _ := netip.ParsePrefix(ServerIP + "/32")
+func ResetRoutes(cSess *session.ConnSession) {
+    dst, _ := netip.ParsePrefix(cSess.ServerAddress + "/32")
     nextHopVPNGateway, _ := netip.ParseAddr(base.LocalInterface.Gateway)
     localInterface.DeleteRoute(dst, nextHopVPNGateway)
 
-    if len(*SplitExclude) > 0 {
-        for _, ipMask := range *SplitExclude {
-            dst, _ = netip.ParsePrefix(IpMaskToCIDR(ipMask))
+    if len(cSess.SplitExclude) > 0 {
+        for _, ipMask := range cSess.SplitExclude {
+            dst, _ = netip.ParsePrefix(utils.IpMaskToCIDR(ipMask))
             localInterface.DeleteRoute(dst, nextHopVPNGateway)
         }
     }
@@ -127,7 +129,7 @@ func GetLocalInterface() error {
         return fmt.Errorf("unable to find a valid network interface")
     }
 
-    base.Info("GetLocalInterface: ", primaryInterface.AdapterName(), primaryInterface.Description(),
+    base.Info("GetLocalInterface:", primaryInterface.AdapterName(), primaryInterface.Description(),
         primaryInterface.FriendlyName(), primaryInterface.Ipv4Metric, primaryInterface.IfType)
 
     base.LocalInterface.Name = primaryInterface.FriendlyName()

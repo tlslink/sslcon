@@ -3,7 +3,7 @@ package rpc
 import (
     "sslcon/auth"
     "sslcon/session"
-    "sslcon/utils"
+    "sslcon/utils/vpnc"
     "sslcon/vpn"
     "strings"
 )
@@ -16,7 +16,7 @@ func Connect() error {
         auth.Prof.HostWithPort = auth.Prof.Host + ":443"
     }
     if !auth.Prof.Initialized {
-        err := utils.GetLocalInterface()
+        err := vpnc.GetLocalInterface()
         if err != nil {
             return err
         }
@@ -38,7 +38,7 @@ func SetupTunnel(reconnect bool) error {
     // 为适应复杂网络环境，必须能够感知网卡变化，建议由前端获取当前网络信息发送过来，而不是登陆前由 Go 处理
     // 断网重连时网卡信息可能已经变化，所以建立隧道时重新获取网卡信息
     if reconnect && !auth.Prof.Initialized {
-        err := utils.GetLocalInterface()
+        err := vpnc.GetLocalInterface()
         if err != nil {
             return err
         }
@@ -46,9 +46,11 @@ func SetupTunnel(reconnect bool) error {
     return vpn.SetupTunnel()
 }
 
+// DisConnect 主动断开或者 ctrl+c，不包括网络或tun异常退出
 func DisConnect() {
     session.Sess.ActiveClose = true
     if session.Sess.CSess != nil {
+        vpnc.ResetRoutes(session.Sess.CSess) // 蛋疼的循环引用
         session.Sess.CSess.Close()
     }
 }

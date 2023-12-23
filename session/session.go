@@ -32,6 +32,8 @@ type stat struct {
 
 // ConnSession used for both TLS and DTLS
 type ConnSession struct {
+    Sess *Session `json:"-"`
+
     ServerAddress     string
     LocalAddress      string
     Hostname          string
@@ -73,6 +75,7 @@ type DtlsSession struct {
 
 func (sess *Session) NewConnSession(header *http.Header) *ConnSession {
     cSess := &ConnSession{
+        Sess:              sess,
         LocalAddress:      base.LocalInterface.Ip4,
         Stat:              &stat{0, 0},
         closeOnce:         sync.Once{},
@@ -101,6 +104,9 @@ func (sess *Session) NewConnSession(header *http.Header) *ConnSession {
     // 如果服务器下发空字符串，字符串数组不会为 nil，会导致解析ip时报错
     cSess.SplitInclude = header.Values("X-CSTP-Split-Include")
     cSess.SplitExclude = header.Values("X-CSTP-Split-Exclude")
+    // debug with https://ip.900cha.com/
+    // cSess.SplitExclude = append(cSess.SplitExclude, "47.243.165.103/255.255.255.255")
+
     cSess.TLSDpdTime, _ = strconv.Atoi(header.Get("X-CSTP-DPD"))
     cSess.TLSKeepaliveTime, _ = strconv.Atoi(header.Get("X-CSTP-Keepalive"))
     // https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-02#section-2.1.5.1
@@ -189,7 +195,6 @@ func (cSess *ConnSession) Close() {
             cSess.DSess.Close()
         }
         close(cSess.CloseChan)
-        utils.ResetRoutes(cSess.ServerAddress, cSess.DNS, &cSess.SplitInclude, &cSess.SplitExclude)
         Sess.CSess = nil
 
         close(Sess.CloseChan)
