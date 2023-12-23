@@ -15,14 +15,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [linux, linux-aarch64, linux-armv7, linux-mipsle, windows]
+        build: [linux, linux-arm64, linux-armv7, linux-mipsle, windows, macos-arm64]
         include:
         - build: linux
           os: ubuntu-20.04
           archive-name: sslcon-linux-amd64.tar.gz
-        - build: linux-aarch64
+        - build: linux-arm64
           os: ubuntu-20.04
-          archive-name: sslcon-linux-aarch64.tar.gz
+          archive-name: sslcon-linux-arm64.tar.gz
         - build: linux-armv7
           os: ubuntu-20.04
           archive-name: sslcon-linux-armv7.tar.gz
@@ -32,6 +32,9 @@ jobs:
         - build: windows
           os: windows-2019
           archive-name: sslcon-windows10-amd64.7z
+        - build: macos-arm64
+          os: macos-12
+          archive-name: sslcon-macos-arm64.tar.gz
     steps:
     - uses: actions/checkout@v4
       with:
@@ -39,7 +42,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: 1.20.10
+        go-version: 1.21.5
     - name: Install dependencies
       run: go get .
     - name: Build
@@ -48,7 +51,7 @@ jobs:
         if [ "${{ matrix.build }}" = "linux" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
           go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
-        elif [ "${{ matrix.build }}" = "linux-aarch64" ]; then
+        elif [ "${{ matrix.build }}" = "linux-arm64" ]; then
           GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
           GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
         elif [ "${{ matrix.build }}" = "linux-armv7" ]; then
@@ -60,6 +63,9 @@ jobs:
         elif [ "${{ matrix.build }}" = "windows" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent.exe vpnagent.go
           go build -trimpath -ldflags "-s -w" -o sslcon.exe sslcon.go
+        elif [ "${{ matrix.build }}" = "macos-arm64" ]; then
+          GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
+          GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
         fi
     - name: Build archive
       shell: bash

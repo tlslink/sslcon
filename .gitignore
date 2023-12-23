@@ -3,6 +3,7 @@
 !.idea/*.iml
 !.idea/modules.xml
 .http/http-client.private.env.json
+.DS_Store
 
 test.go
 vpnagent
