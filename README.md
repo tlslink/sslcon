@@ -8,7 +8,7 @@ The released binaries contain a command line program(sslcon) and a VPN service a
 
 The API is exposed through the WebSocket and JSON-RPC 2.0 protocols, so developers can easily customize a graphical interface that meets their needs.
 
-**[There](https://github.com/tlslink/anylink-client) is a graphical client example showing how to use this project.**
+**[There](https://github.com/tlslink/anylink-client) is a GUI client example showing how to use this project.**
 
 Currently the following servers are supported,
 
@@ -27,7 +27,6 @@ Usage:
   sslcon [command]
 
 Available Commands:
-  config      Set up VPN service
   connect     Connect to the VPN server
   disconnect  Disconnect from the VPN server
   status      Get VPN connection information
@@ -42,7 +41,7 @@ Use "sslcon [command] --help" for more information about a command.
 
 ```shell
 sudo ./vpnagent install
-# uninstall or reinstall
+# uninstall
 sudo ./vpnagent uninstall
 ```
 the installed service on systemd linux
@@ -74,12 +73,6 @@ the installed service on OpenWrt
 
 ```
 ./sslcon status
-```
-
-### config
-
-```
-./sslcon config -l debug -d "/tmp"
 ```
 
 ## APIs

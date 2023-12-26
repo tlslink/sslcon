@@ -16,6 +16,9 @@ var (
     password string
     group    string
     secret   string
+
+    logLevel string
+    logPath  string
 )
 
 var connect = &cobra.Command{
