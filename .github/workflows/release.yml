@@ -34,10 +34,10 @@ jobs:
           archive-name: sslcon-windows10-amd64.7z
         - build: macos
           os: macos-12
-          archive-name: sslcon-macos-amd64.tar.gz
+          archive-name: sslcon-macOS-amd64.tar.gz
         - build: macos-arm64
           os: macos-12
-          archive-name: sslcon-macos-arm64.tar.gz
+          archive-name: sslcon-macOS-arm64.tar.gz
     steps:
     - uses: actions/checkout@v4
       with:
