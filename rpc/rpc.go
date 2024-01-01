@@ -90,7 +90,7 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
     case STATUS:
         // 未连接之前不应该调用这里
         if session.Sess.CSess != nil {
-            if session.Sess.CSess.DTLSPort != "" {
+            if !base.Cfg.NoDTLS && session.Sess.CSess.DTLSPort != "" {
                 // 等待 DTLS 隧道创建过程结束，无论隧道是否建立成功
                 <-session.Sess.CSess.DtlsSetupChan
             }
