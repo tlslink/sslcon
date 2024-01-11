@@ -6,7 +6,7 @@ require (
 	github.com/gorilla/websocket v1.5.1
 	github.com/jackpal/gateway v1.0.13
 	github.com/kardianos/service v1.2.2
-	github.com/pion/dtls/v2 v2.2.9
+	github.com/pion/dtls/v2 v2.2.8-0.20240106215645-bb54a30e6783
 	github.com/sourcegraph/jsonrpc2 v0.2.0
 	github.com/spf13/cobra v1.8.0
 	github.com/tlslink/simplejson v0.0.0-20230709141507-130316fc6e67
@@ -23,7 +23,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/pion/logging v0.2.2 // indirect
-	github.com/pion/transport/v2 v2.2.1 // indirect
+	github.com/pion/transport/v3 v3.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.1 // indirect
