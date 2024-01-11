@@ -81,11 +81,11 @@ func init() {
     rootCmd.AddCommand(connect)
 
     // 将 Flag 解析到全局变量
-    connect.Flags().StringVar(&host, "host", "", "The hostname of the VPN server")
+    connect.Flags().StringVarP(&host, "server", "s", "", "VPN server")
     connect.Flags().StringVarP(&username, "username", "u", "", "User name")
     connect.Flags().StringVarP(&password, "password", "p", "", "User password")
     connect.Flags().StringVarP(&group, "group", "g", "", "User group")
-    connect.Flags().StringVarP(&secret, "secret", "s", "", "Secret key")
+    connect.Flags().StringVarP(&secret, "key", "k", "", "Secret key")
 
     connect.Flags().StringVarP(&logLevel, "log_level", "l", "info", "Set the log level")
     connect.Flags().StringVarP(&logPath, "log_path", "d", os.TempDir(), "Set the log directory")

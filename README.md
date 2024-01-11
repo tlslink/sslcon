@@ -60,7 +60,7 @@ the installed service on OpenWrt
 ### connect
 
 ```bash
-./sslcon connect --host test.com -u vpn -g default -p
+./sslcon connect -s test.com -u vpn -g default -k key
 ```
 
 ### disconnect
@@ -115,7 +115,8 @@ ws://127.0.0.1:6210/rpc
     "host": "vpn.test.com",
     "username": "vpn",
     "password": "123456",
-    "group": ""
+    "group": "",
+    "secret": ""
   },
   "id": 2
 }
