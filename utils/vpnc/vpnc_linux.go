@@ -8,6 +8,7 @@ import (
     "sslcon/base"
     "sslcon/session"
     "sslcon/utils"
+    "time"
 )
 
 var (
@@ -27,22 +28,6 @@ func ConfigInterface(cSess *session.ConnSession) error {
 
     addr, _ := netlink.ParseAddr(utils.IpMask2CIDR(cSess.VPNAddress, cSess.VPNMask))
     err = netlink.AddrAdd(iface, addr)
-    if err != nil {
-        return err
-    }
-
-    // dns
-    if len(cSess.DNS) > 0 {
-        utils.CopyFile("/tmp/resolv.conf.bak", "/etc/resolv.conf")
-
-        var dnsString string
-        for _, dns := range cSess.DNS {
-            dnsString += fmt.Sprintf("nameserver %s\n", dns)
-        }
-
-        // OpenWrt 会将 127.0.0.1 写在最下面，影响其上面的解析
-        utils.NewRecord("/etc/resolv.conf").Write(dnsString, false)
-    }
 
     return err
 }
@@ -91,7 +76,9 @@ func SetRoutes(cSess *session.ConnSession) error {
         }
     }
 
-    return err
+    setDNS(cSess)
+
+    return nil
 }
 
 func ResetRoutes(cSess *session.ConnSession) {
@@ -119,11 +106,7 @@ func ResetRoutes(cSess *session.ConnSession) {
         }
     }
 
-    // dns
-    // 软件崩溃会导致无法恢复 resolv.conf 从而无法上网，需要重启系统
-    if len(cSess.DNS) > 0 {
-        utils.CopyFile("/etc/resolv.conf", "/tmp/resolv.conf.bak")
-    }
+    restoreDNS(cSess)
 }
 
 func GetLocalInterface() error {
@@ -157,6 +140,35 @@ func delAllRoute(route *netlink.Route) {
 
 func routingError(dst *net.IPNet, err error) error {
     return fmt.Errorf("routing error: %s %s", dst.String(), err)
+}
+
+func setDNS(cSess *session.ConnSession) {
+    // dns
+    if len(cSess.DNS) > 0 {
+        // 部分云服务器会在设置路由时重写 /etc/resolv.conf，延迟两秒再设置
+        go func() {
+            utils.CopyFile("/tmp/resolv.conf.bak", "/etc/resolv.conf")
+
+            var dnsString string
+            for _, dns := range cSess.DNS {
+                dnsString += fmt.Sprintf("nameserver %s\n", dns)
+            }
+            time.Sleep(2 * time.Second)
+            // OpenWrt 会将 127.0.0.1 写在最下面，影响其上面的解析
+            err := utils.NewRecord("/etc/resolv.conf").Write(dnsString, false)
+            if err != nil {
+                base.Error("set DNS failed")
+            }
+        }()
+    }
+}
+
+func restoreDNS(cSess *session.ConnSession) {
+    // dns
+    // 软件崩溃会导致无法恢复 resolv.conf 从而无法上网，需要重启系统
+    if len(cSess.DNS) > 0 {
+        utils.CopyFile("/etc/resolv.conf", "/tmp/resolv.conf.bak")
+    }
 }
 
 func execCmd(cmdStrs []string) error {
