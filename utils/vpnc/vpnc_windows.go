@@ -40,15 +40,17 @@ func ConfigInterface(cSess *session.ConnSession) error {
     }
 
     // dns
-    var servers []netip.Addr
-    for _, dns := range cSess.DNS {
-        addr, _ := netip.ParseAddr(dns)
-        servers = append(servers, addr)
-    }
+    if len(cSess.DNS) > 0 {
+        var servers []netip.Addr
+        for _, dns := range cSess.DNS {
+            addr, _ := netip.ParseAddr(dns)
+            servers = append(servers, addr)
+        }
 
-    err = iface.SetDNS(windows.AF_INET, servers, []string{})
-    if err != nil {
-        return err
+        err = iface.SetDNS(windows.AF_INET, servers, []string{})
+        if err != nil {
+            return err
+        }
     }
 
     return nil

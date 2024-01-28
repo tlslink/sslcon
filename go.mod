@@ -12,8 +12,8 @@ require (
 	github.com/tlslink/simplejson v0.0.0-20230709141507-130316fc6e67
 	github.com/vishvananda/netlink v1.2.1-beta.2.0.20230420174744-55c8b9515a01
 	go.uber.org/atomic v1.11.0
-	golang.org/x/crypto v0.17.0
-	golang.org/x/net v0.19.0
+	golang.org/x/crypto v0.18.0
+	golang.org/x/net v0.20.0
 	golang.org/x/sys v0.16.0
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2
 	golang.zx2c4.com/wireguard/windows v0.5.3

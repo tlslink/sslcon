@@ -76,7 +76,9 @@ func SetRoutes(cSess *session.ConnSession) error {
         }
     }
 
-    setDNS(cSess)
+    if len(cSess.DNS) > 0 {
+        setDNS(cSess)
+    }
 
     return nil
 }
@@ -106,7 +108,9 @@ func ResetRoutes(cSess *session.ConnSession) {
         }
     }
 
-    restoreDNS(cSess)
+    if len(cSess.DNS) > 0 {
+        restoreDNS(cSess)
+    }
 }
 
 func GetLocalInterface() error {
