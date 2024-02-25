@@ -11,12 +11,12 @@ import (
     "strings"
 )
 
+var VPNAddress string
+
 func ConfigInterface(cSess *session.ConnSession) error {
+    VPNAddress = cSess.VPNAddress
     cmdStr1 := fmt.Sprintf("ifconfig %s inet %s %s netmask %s up", cSess.TunName, cSess.VPNAddress, cSess.VPNAddress, "255.255.255.255")
     err := execCmd([]string{cmdStr1})
-    if err != nil {
-        return err
-    }
 
     return err
 }
@@ -27,15 +27,8 @@ func SetRoutes(cSess *session.ConnSession) error {
     if err != nil {
         return err
     }
-
-    if len(cSess.SplitInclude) == 0 {
-        cmdStr2 := fmt.Sprintf("route delete default %s", base.LocalInterface.Gateway)
-        cmdStr3 := fmt.Sprintf("route add default %s", cSess.VPNAddress)
-        err = execCmd([]string{cmdStr2, cmdStr3})
-        if err != nil {
-            return err
-        }
-    } else {
+    // 默认路由通过 DNS 设置
+    if len(cSess.SplitInclude) != 0 {
         for _, ipMask := range cSess.SplitInclude {
             dst := utils.IpMaskToCIDR(ipMask)
             cmdStr := fmt.Sprintf("route add -net %s %s", dst, cSess.VPNAddress)
@@ -66,11 +59,11 @@ func SetRoutes(cSess *session.ConnSession) error {
 }
 
 func ResetRoutes(cSess *session.ConnSession) {
-    cmdStr1 := fmt.Sprintf("route delete default %s", cSess.VPNAddress)
-    cmdStr2 := fmt.Sprintf("route add default %s", base.LocalInterface.Gateway)
+    // cmdStr1 := fmt.Sprintf("route delete default %s", cSess.VPNAddress)
+    // cmdStr2 := fmt.Sprintf("route add default %s", base.LocalInterface.Gateway)
 
     cmdStr3 := fmt.Sprintf("route delete -host %s %s", cSess.ServerAddress, base.LocalInterface.Gateway)
-    _ = execCmd([]string{cmdStr1, cmdStr2, cmdStr3})
+    _ = execCmd([]string{cmdStr3})
 
     if len(cSess.SplitExclude) > 0 {
         for _, ipMask := range cSess.SplitExclude {
@@ -80,8 +73,37 @@ func ResetRoutes(cSess *session.ConnSession) {
         }
     }
 
+    if len(cSess.DynamicSplitExcludeDomains) > 0 {
+        cSess.DynamicSplitExcludeResolved.Range(func(_, value any) bool {
+            ips := value.([]string)
+            for _, ip := range ips {
+                dst := ip + "/32"
+                cmdStr := fmt.Sprintf("route delete -net %s %s", dst, base.LocalInterface.Gateway)
+                _ = execCmd([]string{cmdStr})
+            }
+
+            return true
+        })
+    }
+
     if len(cSess.DNS) > 0 {
         restoreDNS(cSess)
+    }
+}
+
+func DynamicAddIncludeRoutes(ips []string) {
+    for _, ip := range ips {
+        dst := ip + "/32"
+        cmdStr := fmt.Sprintf("route add -net %s %s", dst, VPNAddress)
+        _ = execCmd([]string{cmdStr})
+    }
+}
+
+func DynamicAddExcludeRoutes(ips []string) {
+    for _, ip := range ips {
+        dst := ip + "/32"
+        cmdStr := fmt.Sprintf("route add -net %s %s", dst, base.LocalInterface.Gateway)
+        _ = execCmd([]string{cmdStr})
     }
 }
 
@@ -140,20 +162,33 @@ func execCmd(cmdStrs []string) error {
 }
 
 func setDNS(cSess *session.ConnSession) error {
+
+    if len(cSess.DynamicSplitIncludeDomains) > 0 {
+        DynamicAddIncludeRoutes(cSess.DNS)
+    }
+
+    var override string
+    // 如果包含路由为空必为全局路由，如果使用包含域名，则包含路由必须填写一个，如 dns 地址
+    if len(cSess.SplitInclude) == 0 {
+        override = "d.add OverridePrimary # 1"
+    }
+
     command := fmt.Sprintf(`
 		open
 		d.init
 		d.add ServerAddresses * %s
+        d.add SearchOrder 1
+        d.add SupplementalMatchDomains * ""
 		set State:/Network/Service/%s/DNS
+
 		d.init
 		d.add Router %s
 		d.add Addresses * %s
-		d.add SubnetMasks * 255.255.255.255
 		d.add InterfaceName %s
-		d.add OverridePrimary # 1
+        %s
 		set State:/Network/Service/%s/IPv4
 		close
-	`, strings.Join(cSess.DNS, " "), cSess.TunName, cSess.VPNAddress, cSess.VPNAddress, cSess.TunName, cSess.TunName)
+	`, strings.Join(cSess.DNS, " "), cSess.TunName, cSess.VPNAddress, cSess.VPNAddress, cSess.TunName, override, cSess.TunName)
 
     cmd := exec.Command("scutil")
     cmd.Stdin = strings.NewReader(command)

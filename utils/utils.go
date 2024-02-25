@@ -23,6 +23,15 @@ func InArray(arr []string, str string) bool {
     return false
 }
 
+func InArrayGeneric(arr []string, str string) bool {
+    for _, d := range arr {
+        if d != "" && strings.HasSuffix(str, d) {
+            return true
+        }
+    }
+    return false
+}
+
 // SetCommonHeader 认证和建立隧道都需要的 HTTP Header
 // ocserv worker-http.c case HEADER_USER_AGENT 通过 strncasecmp() 函数比较前 n 个字符
 func SetCommonHeader(req *http.Request) {
@@ -38,7 +47,7 @@ func IpMask2CIDR(ip, mask string) string {
     return fmt.Sprintf("%s/%v", ip, length)
 }
 
-// IpMaskToCIDR 格式类似 192.168.1.10/255.255.255.255
+// IpMaskToCIDR 输入 192.168.1.10/255.255.255.255 返回 192.168.1.10/32
 func IpMaskToCIDR(ipMask string) string {
     ips := strings.Split(ipMask, "/")
     length, _ := net.IPMask(net.ParseIP(ips[1]).To4()).Size()

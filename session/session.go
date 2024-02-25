@@ -1,12 +1,14 @@
 package session
 
 import (
+    "encoding/xml"
     "go.uber.org/atomic"
     "net/http"
     "sslcon/base"
     "sslcon/proto"
     "sslcon/utils"
     "strconv"
+    "strings"
     "sync"
     "time"
 )
@@ -34,16 +36,23 @@ type stat struct {
 type ConnSession struct {
     Sess *Session `json:"-"`
 
-    ServerAddress     string
-    LocalAddress      string
-    Hostname          string
-    TunName           string
-    VPNAddress        string // The IPv4 address of the client
-    VPNMask           string // IPv4 netmask
-    DNS               []string
-    MTU               int
-    SplitInclude      []string
-    SplitExclude      []string
+    ServerAddress string
+    LocalAddress  string
+    Hostname      string
+    TunName       string
+    VPNAddress    string // The IPv4 address of the client
+    VPNMask       string // IPv4 netmask
+    DNS           []string
+    MTU           int
+    SplitInclude  []string
+    SplitExclude  []string
+
+    DynamicSplitTunneling       bool
+    DynamicSplitIncludeDomains  []string
+    DynamicSplitIncludeResolved sync.Map // https://github.com/golang/go/issues/31136
+    DynamicSplitExcludeDomains  []string
+    DynamicSplitExcludeResolved sync.Map
+
     TLSCipherSuite    string
     TLSDpdTime        int // https://datatracker.ietf.org/doc/html/rfc3706
     TLSKeepaliveTime  int
@@ -122,6 +131,23 @@ func (sess *Session) NewConnSession(header *http.Header) *ConnSession {
         cSess.DTLSCipherSuite = "Unknown"
     } else {
         cSess.DTLSCipherSuite = header.Get("X-DTLS12-CipherSuite") // 连接前后格式不同
+    }
+
+    postAuth := header.Get("X-CSTP-Post-Auth-XML")
+    if postAuth != "" {
+        dtd := proto.DTD{}
+        err := xml.Unmarshal([]byte(postAuth), &dtd)
+        if err == nil {
+            if dtd.Config.Opaque.CustomAttr.DynamicSplitIncludeDomains != "" {
+                cSess.DynamicSplitIncludeDomains = strings.Split(dtd.Config.Opaque.CustomAttr.DynamicSplitIncludeDomains, ",")
+                cSess.DynamicSplitTunneling = true
+            } else if dtd.Config.Opaque.CustomAttr.DynamicSplitExcludeDomains != "" {
+                // 字符串最后多一个逗号，导致数组最后一个元素为 ""，不排除配置错误其它元素也为空的可能，go 没有直接删除容器元素的方法，这里不处理
+                cSess.DynamicSplitExcludeDomains = strings.Split(dtd.Config.Opaque.CustomAttr.DynamicSplitExcludeDomains, ",")
+                cSess.DynamicSplitTunneling = true
+            }
+
+        }
     }
 
     return cSess

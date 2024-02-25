@@ -17,6 +17,7 @@ type DTD struct {
     DeviceId             deviceId       `xml:"device-id"`
     Opaque               opaque         `xml:"opaque"`
     MacAddressList       macAddressList `xml:"mac-address-list"`
+    Config               config         `xml:"config"`
 }
 
 type auth struct {
@@ -54,4 +55,17 @@ type opaque struct {
 
 type macAddressList struct {
     MacAddress string `xml:"mac-address"`
+}
+
+type config struct {
+    Opaque opaque2 `xml:"opaque"`
+}
+
+type opaque2 struct {
+    CustomAttr customAttr `xml:"custom-attr"`
+}
+
+type customAttr struct {
+    DynamicSplitExcludeDomains string `xml:"dynamic-split-exclude-domains"`
+    DynamicSplitIncludeDomains string `xml:"dynamic-split-include-domains"`
 }

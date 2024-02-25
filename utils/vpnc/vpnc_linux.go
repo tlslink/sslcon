@@ -8,6 +8,7 @@ import (
     "sslcon/base"
     "sslcon/session"
     "sslcon/utils"
+    "strings"
     "time"
 )
 
@@ -43,9 +44,12 @@ func SetRoutes(cSess *session.ConnSession) error {
     route := netlink.Route{LinkIndex: localInterfaceIndex, Dst: dst, Gw: gateway}
     err := netlink.RouteAdd(&route)
     if err != nil {
-        return routingError(dst, err)
+        if !strings.HasSuffix(err.Error(), "exists") {
+            return routingError(dst, err)
+        }
     }
 
+    // 如果包含路由为空必为全局路由，如果使用包含域名，则包含路由必须填写一个，如 dns 地址
     if len(cSess.SplitInclude) == 0 {
         cSess.SplitInclude = append(cSess.SplitInclude, "0.0.0.0/0.0.0.0")
 
@@ -55,12 +59,15 @@ func SetRoutes(cSess *session.ConnSession) error {
         _ = netlink.RouteAdd(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: zero, Gw: gateway, Priority: 10})
     }
 
+    // 如果使用域名包含，原则上不支持在顶级域名匹配中排除某个具体域名的 IP
     for _, ipMask := range cSess.SplitInclude {
         dst, _ = netlink.ParseIPNet(utils.IpMaskToCIDR(ipMask))
         route = netlink.Route{LinkIndex: ifaceIndex, Dst: dst, Priority: 6}
         err = netlink.RouteAdd(&route)
         if err != nil {
-            return routingError(dst, err)
+            if !strings.HasSuffix(err.Error(), "exists") {
+                return routingError(dst, err)
+            }
         }
     }
 
@@ -71,7 +78,9 @@ func SetRoutes(cSess *session.ConnSession) error {
             route = netlink.Route{LinkIndex: localInterfaceIndex, Dst: dst, Gw: gateway, Priority: 5}
             err = netlink.RouteAdd(&route)
             if err != nil {
-                return routingError(dst, err)
+                if !strings.HasSuffix(err.Error(), "exists") {
+                    return routingError(dst, err)
+                }
             }
         }
     }
@@ -108,8 +117,41 @@ func ResetRoutes(cSess *session.ConnSession) {
         }
     }
 
+    if len(cSess.DynamicSplitExcludeDomains) > 0 {
+        cSess.DynamicSplitExcludeResolved.Range(func(_, value any) bool {
+            ips := value.([]string)
+            for _, ip := range ips {
+                dst, _ = netlink.ParseIPNet(ip + "/32")
+                _ = netlink.RouteDel(&netlink.Route{LinkIndex: localInterfaceIndex, Dst: dst})
+            }
+
+            return true
+        })
+    }
+
     if len(cSess.DNS) > 0 {
         restoreDNS(cSess)
+    }
+}
+
+func DynamicAddIncludeRoutes(ips []string) {
+    ifaceIndex := iface.Attrs().Index
+
+    for _, ip := range ips {
+        dst, _ := netlink.ParseIPNet(ip + "/32")
+        route := netlink.Route{LinkIndex: ifaceIndex, Dst: dst, Priority: 6}
+        _ = netlink.RouteAdd(&route)
+    }
+}
+
+func DynamicAddExcludeRoutes(ips []string) {
+    localInterfaceIndex := localInterface.Attrs().Index
+    gateway := net.ParseIP(base.LocalInterface.Gateway)
+
+    for _, ip := range ips {
+        dst, _ := netlink.ParseIPNet(ip + "/32")
+        route := netlink.Route{LinkIndex: localInterfaceIndex, Dst: dst, Gw: gateway, Priority: 5}
+        _ = netlink.RouteAdd(&route)
     }
 }
 
@@ -149,6 +191,11 @@ func routingError(dst *net.IPNet, err error) error {
 func setDNS(cSess *session.ConnSession) {
     // dns
     if len(cSess.DNS) > 0 {
+        // 使用动态域名路由时 DNS 一定走 VPN 才能进行流量分析
+        if len(cSess.DynamicSplitIncludeDomains) > 0 {
+            DynamicAddIncludeRoutes(cSess.DNS)
+        }
+
         // 部分云服务器会在设置路由时重写 /etc/resolv.conf，延迟两秒再设置
         go func() {
             utils.CopyFile("/tmp/resolv.conf.bak", "/etc/resolv.conf")

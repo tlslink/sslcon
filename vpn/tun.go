@@ -1,11 +1,14 @@
 package vpn
 
 import (
+    "github.com/gopacket/gopacket"
+    "github.com/gopacket/gopacket/layers"
     "runtime"
     "sslcon/base"
     "sslcon/proto"
     "sslcon/session"
     "sslcon/tun"
+    "sslcon/utils"
     "sslcon/utils/vpnc"
 )
 
@@ -122,6 +125,13 @@ func payloadInToTun(dev tun.Device, cSess *session.ConnSession) {
             return
         }
 
+        // 只有当使用域名分流且返回数据包为 DNS 时才进一步分析，少建几个协程
+        if cSess.DynamicSplitTunneling {
+            _, srcPort, _, _ := utils.ResolvePacket(pl.Data)
+            if srcPort == 53 {
+                go dynamicSplitRoutes(pl.Data, cSess)
+            }
+        }
         // base.Debug("payloadInToTun")
         // if base.Cfg.LogLevel == "Debug" {
         //     src, srcPort, dst, dstPort := utils.ResolvePacket(pl.Data)
@@ -145,5 +155,51 @@ func payloadInToTun(dev tun.Device, cSess *session.ConnSession) {
 
         // 释放由 serverToPayloadIn 申请的内存
         putPayloadBuffer(pl)
+    }
+}
+
+func dynamicSplitRoutes(data []byte, cSess *session.ConnSession) {
+    packet := gopacket.NewPacket(data, layers.LayerTypeIPv4, gopacket.Default)
+    dnsLayer := packet.Layer(layers.LayerTypeDNS)
+    if dnsLayer != nil {
+        dns, _ := dnsLayer.(*layers.DNS)
+
+        query := string(dns.Questions[0].Name)
+        // base.Debug("Query:", query)
+
+        if utils.InArrayGeneric(cSess.DynamicSplitIncludeDomains, query) {
+            // 分析流量后才知道请求的域名，即使已经设置路由，仍然需要分析流量，不可避免的 overhead
+            if _, ok := cSess.DynamicSplitIncludeResolved.Load(query); !ok && dns.ANCount > 0 {
+                var answers []string
+                for _, v := range dns.Answers {
+                    // log.Printf("DNS Answer: %+v", v)
+                    if v.Type == layers.DNSTypeA {
+                        // fmt.Println("Name:", string(v.Name)) // cname, canonical name
+                        // base.Debug("Address:", v.IP.String())
+                        answers = append(answers, v.IP.String())
+                    }
+                }
+                if len(answers) > 0 {
+                    cSess.DynamicSplitIncludeResolved.Store(query, answers)
+                    vpnc.DynamicAddIncludeRoutes(answers)
+                }
+            }
+        } else if utils.InArrayGeneric(cSess.DynamicSplitExcludeDomains, query) {
+            if _, ok := cSess.DynamicSplitExcludeResolved.Load(query); !ok && dns.ANCount > 0 {
+                var answers []string
+                for _, v := range dns.Answers {
+                    // log.Printf("DNS Answer: %+v", v)
+                    if v.Type == layers.DNSTypeA {
+                        // fmt.Println("Name:", string(v.Name)) // cname, canonical name
+                        // base.Debug("Address:", v.IP.String())
+                        answers = append(answers, v.IP.String())
+                    }
+                }
+                if len(answers) > 0 {
+                    cSess.DynamicSplitExcludeResolved.Store(query, answers)
+                    vpnc.DynamicAddExcludeRoutes(answers)
+                }
+            }
+        }
     }
 }

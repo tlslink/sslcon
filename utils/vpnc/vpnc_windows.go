@@ -18,6 +18,7 @@ var (
     localInterface winipcfg.LUID
     iface          winipcfg.LUID
     nextHopVPN     netip.Addr
+    nextHopGateway netip.Addr
 )
 
 func ConfigInterface(cSess *session.ConnSession) error {
@@ -35,32 +36,15 @@ func ConfigInterface(cSess *session.ConnSession) error {
     nextHopVPN, _ = netip.ParseAddr(cSess.VPNAddress)
     prefixVPN, _ := netip.ParsePrefix(utils.IpMask2CIDR(cSess.VPNAddress, cSess.VPNMask))
     err = iface.SetIPAddressesForFamily(windows.AF_INET, []netip.Prefix{prefixVPN})
-    if err != nil {
-        return err
-    }
 
-    // dns
-    if len(cSess.DNS) > 0 {
-        var servers []netip.Addr
-        for _, dns := range cSess.DNS {
-            addr, _ := netip.ParseAddr(dns)
-            servers = append(servers, addr)
-        }
-
-        err = iface.SetDNS(windows.AF_INET, servers, []string{})
-        if err != nil {
-            return err
-        }
-    }
-
-    return nil
+    return err
 }
 
 func SetRoutes(cSess *session.ConnSession) error {
     // routes
     dst, err := netip.ParsePrefix(cSess.ServerAddress + "/32")
-    nextHopVPNGateway, _ := netip.ParseAddr(base.LocalInterface.Gateway)
-    err = localInterface.AddRoute(dst, nextHopVPNGateway, 5)
+    nextHopGateway, _ = netip.ParseAddr(base.LocalInterface.Gateway)
+    err = localInterface.AddRoute(dst, nextHopGateway, 5)
     if err != nil {
         return routingError(dst, err)
     }
@@ -84,26 +68,55 @@ func SetRoutes(cSess *session.ConnSession) error {
     if len(cSess.SplitExclude) > 0 {
         for _, ipMask := range cSess.SplitExclude {
             dst, _ = netip.ParsePrefix(utils.IpMaskToCIDR(ipMask))
-            err = localInterface.AddRoute(dst, nextHopVPNGateway, 5)
+            err = localInterface.AddRoute(dst, nextHopGateway, 5)
             if err != nil {
                 return routingError(dst, err)
             }
         }
     }
 
+    // dns
+    if len(cSess.DNS) > 0 {
+        err = setDNS(cSess)
+    }
     return err
 }
 
 func ResetRoutes(cSess *session.ConnSession) {
     dst, _ := netip.ParsePrefix(cSess.ServerAddress + "/32")
-    nextHopVPNGateway, _ := netip.ParseAddr(base.LocalInterface.Gateway)
-    localInterface.DeleteRoute(dst, nextHopVPNGateway)
+    localInterface.DeleteRoute(dst, nextHopGateway)
 
     if len(cSess.SplitExclude) > 0 {
         for _, ipMask := range cSess.SplitExclude {
             dst, _ = netip.ParsePrefix(utils.IpMaskToCIDR(ipMask))
-            localInterface.DeleteRoute(dst, nextHopVPNGateway)
+            localInterface.DeleteRoute(dst, nextHopGateway)
         }
+    }
+
+    if len(cSess.DynamicSplitExcludeDomains) > 0 {
+        cSess.DynamicSplitExcludeResolved.Range(func(_, value any) bool {
+            ips := value.([]string)
+            for _, ip := range ips {
+                dst, _ = netip.ParsePrefix(ip + "/32")
+                localInterface.DeleteRoute(dst, nextHopGateway)
+            }
+
+            return true
+        })
+    }
+}
+
+func DynamicAddIncludeRoutes(ips []string) {
+    for _, ip := range ips {
+        dst, _ := netip.ParsePrefix(ip + "/32")
+        _ = iface.AddRoute(dst, nextHopVPN, 6)
+    }
+}
+
+func DynamicAddExcludeRoutes(ips []string) {
+    for _, ip := range ips {
+        dst, _ := netip.ParsePrefix(ip + "/32")
+        _ = localInterface.AddRoute(dst, nextHopGateway, 5)
     }
 }
 
@@ -163,4 +176,20 @@ func execCmd(cmdStrs []string) error {
         }
     }
     return nil
+}
+
+func setDNS(cSess *session.ConnSession) error {
+
+    if len(cSess.DynamicSplitIncludeDomains) > 0 {
+        DynamicAddIncludeRoutes(cSess.DNS)
+    }
+
+    var servers []netip.Addr
+    for _, dns := range cSess.DNS {
+        addr, _ := netip.ParseAddr(dns)
+        servers = append(servers, addr)
+    }
+
+    err := iface.SetDNS(windows.AF_INET, servers, []string{})
+    return err
 }
