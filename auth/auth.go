@@ -7,6 +7,7 @@ import (
     "encoding/xml"
     "errors"
     "fmt"
+    "github.com/elastic/go-sysinfo"
     "io"
     "net"
     "net/http"
@@ -46,6 +47,11 @@ type Profile struct {
     TunnelGroup string
     GroupAlias  string
     ConfigHash  string
+
+    ComputerName    string
+    DeviceType      string
+    PlatformVersion string
+    UniqueId        string
 }
 
 const (
@@ -58,6 +64,16 @@ func init() {
     reqHeaders["X-Aggregate-Auth"] = "1"
 
     Prof.Scheme = "https://"
+
+    host, _ := sysinfo.Host()
+    info := host.Info()
+    Prof.ComputerName = info.Hostname
+    Prof.UniqueId = info.UniqueID
+
+    os := info.OS
+    Prof.DeviceType = os.Name
+    Prof.PlatformVersion = strings.Split(os.Version, " ")[0]
+    // log.Printf("%+v %+v", info, os)
 }
 
 // InitAuth 确定用户组和服务端认证地址 AuthPath
@@ -209,14 +225,14 @@ func tplPost(typ int, path string, dtd *proto.DTD) error {
 var templateInit = `<?xml version="1.0" encoding="UTF-8"?>
 <config-auth client="vpn" type="init" aggregate-auth-version="2">
     <version who="vpn">{{.AppVersion}}</version>
-    <device-id>dummy</device-id>
+    <device-id computer-name="{{.ComputerName}}" device-type="{{.DeviceType}}" platform-version="{{.PlatformVersion}}" unique-id="{{.UniqueId}}"></device-id>
 </config-auth>`
 
 // https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-03#section-2.1.2.2
 var templateAuthReply = `<?xml version="1.0" encoding="UTF-8"?>
 <config-auth client="vpn" type="auth-reply" aggregate-auth-version="2">
     <version who="vpn">{{.AppVersion}}</version>
-    <device-id>dummy</device-id>
+    <device-id computer-name="{{.ComputerName}}" device-type="{{.DeviceType}}" platform-version="{{.PlatformVersion}}" unique-id="{{.UniqueId}}"></device-id>
     <opaque is-for="sg">
         <tunnel-group>{{.TunnelGroup}}</tunnel-group>
         <group-alias>{{.GroupAlias}}</group-alias>
