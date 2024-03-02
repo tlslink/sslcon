@@ -28,7 +28,7 @@ func ConfigInterface(cSess *session.ConnSession) error {
         return err
     }
 
-    iface = winipcfg.LUID(tun.NativeTunDevice.LUID())
+    iface = tun.NativeTunDevice.LUID()
 
     // ip address
     iface.FlushIPAddresses(windows.AF_UNSPEC)

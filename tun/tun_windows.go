@@ -1,47 +1,23 @@
-/* SPDX-License-Identifier: MIT
- *
- * Copyright (C) 2017-2023 WireGuard LLC. All Rights Reserved.
- */
-// copy from https://git.zx2c4.com/wireguard-go/tree/tun/tun_windows.go?h=0.0.20230223
 package tun
 
 import (
     "errors"
     "fmt"
+    "github.com/lysShub/wintun-go"
     "golang.org/x/sys/windows"
-    "golang.zx2c4.com/wintun"
+    "golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
     "os"
     "sync"
     "sync/atomic"
-    "time"
-    _ "unsafe"
 )
-
-const (
-    rateMeasurementGranularity = uint64((time.Second / 2) / time.Nanosecond)
-    spinloopRateThreshold      = 800000000 / 8                                   // 800mbps
-    spinloopDuration           = uint64(time.Millisecond / 80 / time.Nanosecond) // ~1gbit/s
-)
-
-type rateJuggler struct {
-    current       atomic.Uint64
-    nextByteCount atomic.Uint64
-    nextStartTime atomic.Int64
-    changing      atomic.Bool
-}
 
 type NativeTun struct {
-    wt        *wintun.Adapter
-    name      string
-    handle    windows.Handle
-    rate      rateJuggler
-    session   wintun.Session
-    readWait  windows.Handle
-    events    chan Event
-    running   sync.WaitGroup
+    wt   *wintun.Adapter
+    name string
+    mtu  int
+
     closeOnce sync.Once
     close     atomic.Bool
-    forcedMTU int
 }
 
 var (
@@ -54,150 +30,69 @@ var (
     }
 )
 
-//go:linkname procyield runtime.procyield
-func procyield(cycles uint32)
-
-//go:linkname nanotime runtime.nanotime
-func nanotime() int64
-
-// CreateTUN creates a Wintun interface with the given name. Should a Wintun
-// interface with the same name exist, it is reused.
-func CreateTUN(ifname string, mtu int) (Device, error) {
-    return CreateTUNWithRequestedGUID(ifname, WintunStaticRequestedGUID, mtu)
+func init() {
+    wintun.Load(wintun.DLL)
 }
 
-// CreateTUNWithRequestedGUID creates a Wintun interface with the given name and
-// a requested GUID. Should a Wintun interface with the same name exist, it is reused.
-func CreateTUNWithRequestedGUID(ifname string, requestedGUID *windows.GUID, mtu int) (Device, error) {
-    // wt, err := wintun.OpenAdapter(ifname)
-    // if wt == nil {
-    wt, err := wintun.CreateAdapter(ifname, WintunTunnelType, requestedGUID)
-    // }
-    if err != nil {
-        return nil, fmt.Errorf("Error creating interface: %w", err)
-    }
-
-    forcedMTU := 1420
-    if mtu > 0 {
-        forcedMTU = mtu
-    }
+func CreateTUN(ifname string, mtu int) (Device, error) {
+    wt, err := wintun.CreateAdapter(ifname,
+        wintun.TunType(WintunTunnelType),
+        wintun.Guid(WintunStaticRequestedGUID),
+        wintun.RingBuff(0x800000)) // 8 MiB, 5个 0 为 1 MiB
 
     tun := &NativeTun{
-        wt:        wt,
-        name:      ifname,
-        handle:    windows.InvalidHandle,
-        events:    make(chan Event, 10),
-        forcedMTU: forcedMTU,
+        wt:   wt,
+        name: ifname,
+        mtu:  mtu,
     }
 
-    tun.session, err = wt.StartSession(0x800000) // Ring capacity, 8 MiB
-    if err != nil {
-        tun.wt.Close()
-        close(tun.events)
-        return nil, fmt.Errorf("Error starting session: %w", err)
-    }
-    tun.readWait = tun.session.ReadWaitEvent()
-    return tun, nil
-}
-
-func (tun *NativeTun) Name() (string, error) {
-    return tun.name, nil
+    return tun, err
 }
 
 func (tun *NativeTun) File() *os.File {
     return nil
 }
 
-func (tun *NativeTun) Events() <-chan Event {
-    return tun.events
-}
-
-func (tun *NativeTun) Close() error {
-    var err error
-    tun.closeOnce.Do(func() {
-        tun.close.Store(true)
-        windows.SetEvent(tun.readWait)
-        tun.running.Wait()
-        tun.session.End()
-        if tun.wt != nil {
-            tun.wt.Close()
-        }
-        close(tun.events)
-    })
-    return err
-}
-
-func (tun *NativeTun) MTU() (int, error) {
-    return tun.forcedMTU, nil
-}
-
-// TODO: This is a temporary hack. We really need to be monitoring the interface in real time and adapting to MTU changes.
-func (tun *NativeTun) ForceMTU(mtu int) {
-    update := tun.forcedMTU != mtu
-    tun.forcedMTU = mtu
-    if update {
-        tun.events <- EventMTUUpdate
-    }
-}
-
-// Note: Read() and Write() assume the caller comes only from a single thread; there's no locking.
-
 func (tun *NativeTun) Read(buff []byte, offset int) (int, error) {
-    tun.running.Add(1)
-    defer tun.running.Done()
-retry:
+
     if tun.close.Load() {
         return 0, os.ErrClosed
     }
-    start := nanotime()
-    shouldSpin := tun.rate.current.Load() >= spinloopRateThreshold && uint64(start-tun.rate.nextStartTime.Load()) <= rateMeasurementGranularity*2
+
     for {
-        if tun.close.Load() {
-            return 0, os.ErrClosed
-        }
-        packet, err := tun.session.ReceivePacket()
+        packet, err := tun.wt.ReceivePacket()
         switch err {
         case nil:
             packetSize := len(packet)
             copy(buff[offset:], packet)
-            tun.session.ReleaseReceivePacket(packet)
-            tun.rate.update(uint64(packetSize))
+            tun.wt.ReleasePacket(packet)
+            // tun.rate.update(uint64(packetSize))
             return packetSize, nil
-        case windows.ERROR_NO_MORE_ITEMS:
-            if !shouldSpin || uint64(nanotime()-start) >= spinloopDuration {
-                windows.WaitForSingleObject(tun.readWait, windows.INFINITE)
-                goto retry
-            }
-            procyield(1)
-            continue
         case windows.ERROR_HANDLE_EOF:
             return 0, os.ErrClosed
         case windows.ERROR_INVALID_DATA:
-            return 0, errors.New("Send ring corrupt")
+            return 0, errors.New("send ring corrupt")
         }
-        return 0, fmt.Errorf("Read failed: %w", err)
+        return 0, fmt.Errorf("read failed: %w", err)
     }
 }
 
-func (tun *NativeTun) Flush() error {
-    return nil
-}
-
 func (tun *NativeTun) Write(buff []byte, offset int) (int, error) {
-    tun.running.Add(1)
-    defer tun.running.Done()
+
     if tun.close.Load() {
         return 0, os.ErrClosed
     }
 
-    packetSize := len(buff) - offset
-    tun.rate.update(uint64(packetSize))
+    packetSize := uint32(len(buff) - offset)
 
-    packet, err := tun.session.AllocateSendPacket(packetSize)
+    packet, err := tun.wt.AllocateSendPacket(packetSize)
     if err == nil {
         copy(packet, buff[offset:])
-        tun.session.SendPacket(packet)
-        return packetSize, nil
+        err = tun.wt.SendPacket(packet)
+        if err != nil {
+            return 0, err
+        }
+        return int(packetSize), nil
     }
     switch err {
     case windows.ERROR_HANDLE_EOF:
@@ -205,35 +100,41 @@ func (tun *NativeTun) Write(buff []byte, offset int) (int, error) {
     case windows.ERROR_BUFFER_OVERFLOW:
         return 0, nil // Dropping when ring is full.
     }
-    return 0, fmt.Errorf("Write failed: %w", err)
+    return 0, fmt.Errorf("write failed: %w", err)
 }
 
-// LUID returns Windows interface instance ID.
-func (tun *NativeTun) LUID() uint64 {
-    tun.running.Add(1)
-    defer tun.running.Done()
-    if tun.close.Load() {
+func (tun *NativeTun) Flush() error {
+    return nil
+}
+
+func (tun *NativeTun) MTU() (int, error) {
+    return tun.mtu, nil
+}
+
+func (tun *NativeTun) Name() (string, error) {
+    return tun.name, nil
+}
+
+func (tun *NativeTun) Events() <-chan Event {
+    return nil
+}
+
+func (tun *NativeTun) Close() error {
+    tun.closeOnce.Do(func() {
+        tun.close.Store(true)
+
+        if tun.wt != nil {
+            tun.wt.Close()
+        }
+    })
+
+    return nil
+}
+
+func (tun *NativeTun) LUID() winipcfg.LUID {
+    luid, err := tun.wt.GetAdapterLuid()
+    if err != nil {
         return 0
     }
-    return tun.wt.LUID()
-}
-
-// RunningVersion returns the running version of the Wintun driver.
-func (tun *NativeTun) RunningVersion() (version uint32, err error) {
-    return wintun.RunningVersion()
-}
-
-func (rate *rateJuggler) update(packetLen uint64) {
-    now := nanotime()
-    total := rate.nextByteCount.Add(packetLen)
-    period := uint64(now - rate.nextStartTime.Load())
-    if period >= rateMeasurementGranularity {
-        if !rate.changing.CompareAndSwap(false, true) {
-            return
-        }
-        rate.nextStartTime.Store(now)
-        rate.current.Store(total * uint64(time.Second/time.Nanosecond) / period)
-        rate.nextByteCount.Store(0)
-        rate.changing.Store(false)
-    }
+    return luid
 }

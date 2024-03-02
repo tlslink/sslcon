@@ -80,9 +80,9 @@ jobs:
         cp LICENSE README.md archive/
         # ls -lR
         if [ "${{ matrix.build }}" = "windows" ]; then
-          cp vpnagent.exe sslcon.exe wintun.dll ./archive/
+          cp vpnagent.exe sslcon.exe ./archive/
           cd archive
-          7z a "${{ matrix.archive-name }}" LICENSE README.md vpnagent.exe sslcon.exe wintun.dll
+          7z a "${{ matrix.archive-name }}" LICENSE README.md vpnagent.exe sslcon.exe
         else
           cp vpnagent sslcon ./archive/
           cd archive
