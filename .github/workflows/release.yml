@@ -45,7 +45,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: 1.21.5
+        go-version: 1.22.0
     - name: Install dependencies
       run: go get .
     - name: Build
@@ -70,7 +70,7 @@ jobs:
           go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
           go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
         elif [ "${{ matrix.build }}" = "macos-arm64" ]; then
-          GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
+          GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
           GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
         fi
     - name: Build archive
