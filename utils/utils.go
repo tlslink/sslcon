@@ -38,7 +38,7 @@ func SetCommonHeader(req *http.Request) {
     if base.Cfg.CiscoCompat || base.Cfg.AgentName == "" {
         base.Cfg.AgentName = "AnyConnect"
     }
-    req.Header.Set("User-Agent", fmt.Sprintf("%s %s %s", base.Cfg.AgentName, FirstUpper(runtime.GOOS), base.Cfg.AgentVersion))
+    req.Header.Set("User-Agent", fmt.Sprintf("%s %s %s", base.Cfg.AgentName, FirstUpper(runtime.GOOS+"_"+runtime.GOARCH), base.Cfg.AgentVersion))
     req.Header.Set("Content-Type", "application/xml")
 }
 
