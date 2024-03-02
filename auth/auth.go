@@ -9,7 +9,6 @@ import (
     "fmt"
     "github.com/elastic/go-sysinfo"
     "io"
-    "log"
     "net"
     "net/http"
     "runtime"
@@ -79,7 +78,7 @@ func init() {
     } else {
         Prof.PlatformVersion = strings.Split(os.Version, " ")[0]
     }
-    log.Printf("%+v %+v", info, os)
+    // log.Printf("%+v %+v", info, os)
 }
 
 // InitAuth 确定用户组和服务端认证地址 AuthPath

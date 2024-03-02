@@ -46,7 +46,9 @@ func SetRoutes(cSess *session.ConnSession) error {
     nextHopGateway, _ = netip.ParseAddr(base.LocalInterface.Gateway)
     err = localInterface.AddRoute(dst, nextHopGateway, 5)
     if err != nil {
-        return routingError(dst, err)
+        if !strings.HasSuffix(err.Error(), "exists.") {
+            return routingError(dst, err)
+        }
     }
 
     // Windows 排除路由 metric 相对大小好像不起作用，但不影响效果
@@ -57,9 +59,7 @@ func SetRoutes(cSess *session.ConnSession) error {
         dst, _ = netip.ParsePrefix(utils.IpMaskToCIDR(ipMask))
         err = iface.AddRoute(dst, nextHopVPN, 6)
         if err != nil {
-            if strings.Contains(err.Error(), "already exists") {
-                continue
-            } else {
+            if !strings.HasSuffix(err.Error(), "exists.") {
                 return routingError(dst, err)
             }
         }
@@ -70,7 +70,9 @@ func SetRoutes(cSess *session.ConnSession) error {
             dst, _ = netip.ParsePrefix(utils.IpMaskToCIDR(ipMask))
             err = localInterface.AddRoute(dst, nextHopGateway, 5)
             if err != nil {
-                return routingError(dst, err)
+                if !strings.HasSuffix(err.Error(), "exists.") {
+                    return routingError(dst, err)
+                }
             }
         }
     }
