@@ -9,8 +9,10 @@ import (
     "fmt"
     "github.com/elastic/go-sysinfo"
     "io"
+    "log"
     "net"
     "net/http"
+    "runtime"
     "sslcon/base"
     "sslcon/proto"
     "sslcon/session"
@@ -72,8 +74,12 @@ func init() {
 
     os := info.OS
     Prof.DeviceType = os.Name
-    Prof.PlatformVersion = strings.Split(os.Version, " ")[0]
-    // log.Printf("%+v %+v", info, os)
+    if runtime.GOOS == "windows" {
+        Prof.PlatformVersion = os.Build
+    } else {
+        Prof.PlatformVersion = strings.Split(os.Version, " ")[0]
+    }
+    log.Printf("%+v %+v", info, os)
 }
 
 // InitAuth 确定用户组和服务端认证地址 AuthPath
