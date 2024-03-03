@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners
-        os: [ubuntu-20.04, windows-2019, macos-12]
+        os: [ubuntu-20.04, windows-2019, macos-14]
     steps:
     - uses: actions/checkout@v4
       with:
@@ -37,7 +37,7 @@ jobs:
         elif [ "${{ matrix.os }}" = "windows-2019" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent.exe vpnagent.go
           go build -trimpath -ldflags "-s -w" -o sslcon.exe sslcon.go
-        elif [ "${{ matrix.os }}" = "macos-12" ]; then
+        elif [ "${{ matrix.os }}" = "macos-14" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
           go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
         fi
