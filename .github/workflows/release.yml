@@ -15,28 +15,39 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [linux, linux-arm64, linux-armv7, linux-mipsle, windows, macos, macos-arm64]
+        build: [linux, linux-arm64, linux-armv7, linux-mipsle, windows, windows-arm64, macos, macos-arm64]
         include:
         - build: linux
           os: ubuntu-20.04
+          go: 1.22.1
           archive-name: sslcon-linux-amd64.tar.gz
         - build: linux-arm64
           os: ubuntu-20.04
+          go: 1.22.1
           archive-name: sslcon-linux-arm64.tar.gz
         - build: linux-armv7
           os: ubuntu-20.04
+          go: 1.22.1
           archive-name: sslcon-linux-armv7.tar.gz
         - build: linux-mipsle
           os: ubuntu-20.04
+          go: 1.22.1
           archive-name: sslcon-linux-mipsle.tar.gz
         - build: windows
           os: windows-2019
+          go: 1.22.1
           archive-name: sslcon-windows10-amd64.7z
+        - build: windows-arm64
+          os: windows-2019
+          go: 1.22.1
+          archive-name: sslcon-windows10-arm64.7z
         - build: macos
           os: macos-12
+          go: 1.22.1
           archive-name: sslcon-macOS-amd64.tar.gz
         - build: macos-arm64
           os: macos-14
+          go: 1.22.1
           archive-name: sslcon-macOS-arm64.tar.gz
     steps:
     - uses: actions/checkout@v4
@@ -45,7 +56,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: 1.22.0
+        go-version: ${{ matrix.go }}
     - name: Install dependencies
       run: go get .
     - name: Build
@@ -66,6 +77,9 @@ jobs:
         elif [ "${{ matrix.build }}" = "windows" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent.exe vpnagent.go
           go build -trimpath -ldflags "-s -w" -o sslcon.exe sslcon.go
+        elif [ "${{ matrix.build }}" = "windows-arm64" ]; then
+          GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o vpnagent.exe vpnagent.go
+          GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o sslcon.exe sslcon.go
         elif [ "${{ matrix.build }}" = "macos" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
           go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
@@ -79,7 +93,7 @@ jobs:
         mkdir archive
         cp LICENSE README.md archive/
         # ls -lR
-        if [ "${{ matrix.build }}" = "windows" ]; then
+        if [ "${{ matrix.build }}" = "windows" -o "${{ matrix.build }}" = "windows-arm64" ]; then
           cp vpnagent.exe sslcon.exe ./archive/
           cd archive
           7z a "${{ matrix.archive-name }}" LICENSE README.md vpnagent.exe sslcon.exe
