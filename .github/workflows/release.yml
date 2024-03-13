@@ -58,7 +58,7 @@ jobs:
       with:
         go-version: ${{ matrix.go }}
     - name: Install dependencies
-      run: go get .
+      run: go get -v .
     - name: Build
       shell: bash
       run: |
