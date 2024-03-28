@@ -129,21 +129,28 @@ func GetLocalInterface() error {
     }
 
     var primaryInterface *winipcfg.IPAdapterAddresses
+    var virtualPrimaryInterface *winipcfg.IPAdapterAddresses
     for _, ifc := range ifcs {
         base.Debug(ifc.AdapterName(), ifc.Description(), ifc.FriendlyName(), ifc.Ipv4Metric, ifc.IfType)
         // exclude Virtual Ethernet and Loopback Adapter
-        if !strings.Contains(ifc.Description(), "Virtual") {
-            // https://git.zx2c4.com/wireguard-windows/tree/tunnel/winipcfg/types.go?h=v0.5.3#n61
-            if (ifc.IfType == 6 || ifc.IfType == 71) && ifc.FirstGatewayAddress != nil {
-                if primaryInterface == nil || (ifc.Ipv4Metric < primaryInterface.Ipv4Metric) {
+        // https://git.zx2c4.com/wireguard-windows/tree/tunnel/winipcfg/types.go?h=v0.5.3#n61
+        if (ifc.IfType == 6 || ifc.IfType == 71) && ifc.FirstGatewayAddress != nil {
+            if primaryInterface == nil || (ifc.Ipv4Metric < primaryInterface.Ipv4Metric) {
+                if !strings.Contains(ifc.Description(), "Virtual") {
                     primaryInterface = ifc
+                } else if virtualPrimaryInterface == nil {
+                    virtualPrimaryInterface = ifc
                 }
             }
         }
     }
 
     if primaryInterface == nil {
-        return fmt.Errorf("unable to find a valid network interface")
+        if virtualPrimaryInterface != nil {
+            primaryInterface = virtualPrimaryInterface
+        } else {
+            return fmt.Errorf("unable to find a valid network interface")
+        }
     }
 
     base.Info("GetLocalInterface:", primaryInterface.AdapterName(), primaryInterface.Description(),
