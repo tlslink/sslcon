@@ -23,9 +23,9 @@ jobs:
       with:
         submodules: 'recursive'
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
-        go-version: 1.22.0
+        go-version: 'stable'
     - name: Install dependencies
       run: go get .
     - name: Build

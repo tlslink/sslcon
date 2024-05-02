@@ -15,46 +15,50 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [linux, linux-arm64, linux-armv7, linux-mipsle, windows, windows-arm64, macos, macos-arm64]
+        build: [linux, linux-riscv64, linux-arm64, linux-armv7, linux-mipsle, windows, windows-arm64, macos, macos-arm64]
         include:
         - build: linux
           os: ubuntu-20.04
-          go: 1.22.1
+          go: 'stable'
           archive-name: sslcon-linux-amd64.tar.gz
+        - build: linux-riscv64
+          os: ubuntu-20.04
+          go: 'stable'
+          archive-name: sslcon-linux-riscv64.tar.gz
         - build: linux-arm64
           os: ubuntu-20.04
-          go: 1.22.1
+          go: 'stable'
           archive-name: sslcon-linux-arm64.tar.gz
         - build: linux-armv7
           os: ubuntu-20.04
-          go: 1.22.1
+          go: 'stable'
           archive-name: sslcon-linux-armv7.tar.gz
         - build: linux-mipsle
           os: ubuntu-20.04
-          go: 1.22.1
+          go: 'stable'
           archive-name: sslcon-linux-mipsle.tar.gz
         - build: windows
           os: windows-2019
-          go: 1.22.1
+          go: 'stable'
           archive-name: sslcon-windows10-amd64.7z
         - build: windows-arm64
           os: windows-2019
-          go: 1.22.1
+          go: 'stable'
           archive-name: sslcon-windows10-arm64.7z
         - build: macos
           os: macos-12
-          go: 1.22.1
+          go: 'stable'
           archive-name: sslcon-macOS-amd64.tar.gz
         - build: macos-arm64
           os: macos-14
-          go: 1.22.1
+          go: 'stable'
           archive-name: sslcon-macOS-arm64.tar.gz
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go }}
     - name: Install dependencies
@@ -65,6 +69,9 @@ jobs:
         if [ "${{ matrix.build }}" = "linux" ]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
           go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
+        elif [ "${{ matrix.build }}" = "linux-riscv64" ]; then
+          GOOS=linux GOARCH=riscv64 go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
+          GOOS=linux GOARCH=riscv64 go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
         elif [ "${{ matrix.build }}" = "linux-arm64" ]; then
           GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
           GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go

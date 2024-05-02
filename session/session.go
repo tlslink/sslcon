@@ -165,7 +165,7 @@ func (cSess *ConnSession) DPDTimer() {
         if dpdTime < 10 {
             dpdTime = 10
         }
-        tick := time.NewTicker(time.Duration(dpdTime) * time.Second)
+        ticker := time.NewTicker(time.Duration(dpdTime) * time.Second)
 
         tlsDpd := proto.Payload{
             Type: 0x03,
@@ -178,7 +178,7 @@ func (cSess *ConnSession) DPDTimer() {
 
         for {
             select {
-            case <-tick.C:
+            case <-ticker.C:
                 // base.Debug("dead peer detection")
                 select {
                 case cSess.PayloadOutTLS <- &tlsDpd:
@@ -191,7 +191,7 @@ func (cSess *ConnSession) DPDTimer() {
                     }
                 }
             case <-cSess.CloseChan:
-                tick.Stop()
+                ticker.Stop()
                 return
             }
         }
@@ -205,11 +205,11 @@ func (cSess *ConnSession) ReadDeadTimer() {
         }()
         // 避免每次 for 循环都重置读超时的时间
         // 这里是绝对时间，至于链接本身，服务器没有数据时 conn.Read 会阻塞，有数据时会不断判断
-        tick := time.NewTicker(4 * time.Second)
-        for range tick.C {
+        ticker := time.NewTicker(4 * time.Second)
+        for range ticker.C {
             select {
             case <-cSess.CloseChan:
-                tick.Stop()
+                ticker.Stop()
                 return
             default:
                 cSess.ResetTLSReadDead.Store(true)
