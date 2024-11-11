@@ -1,6 +1,7 @@
 package vpn
 
 import (
+    "context"
     "encoding/hex"
     "github.com/pion/dtls/v3"
     "net"
@@ -63,6 +64,13 @@ func dtlsChannel(cSess *session.ConnSession) {
     conn, err = dtls.Dial("udp4", addr, config)
     // https://github.com/pion/dtls/pull/649
     if err != nil {
+        base.Error(err)
+        close(cSess.DtlsSetupChan) // 没有成功建立 DTLS 隧道
+        return
+    }
+    ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+    defer cancel()
+    if err = conn.HandshakeContext(ctx); err != nil {
         base.Error(err)
         close(cSess.DtlsSetupChan) // 没有成功建立 DTLS 隧道
         return
