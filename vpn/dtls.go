@@ -1,9 +1,8 @@
 package vpn
 
 import (
-    "context"
     "encoding/hex"
-    "github.com/pion/dtls/v2"
+    "github.com/pion/dtls/v3"
     "net"
     "sslcon/base"
     "sslcon/proto"
@@ -60,9 +59,9 @@ func dtlsChannel(cSess *session.ConnSession) {
         // },
         // PSKIdentityHint: id,
     }
-    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-    defer cancel()
-    conn, err = dtls.DialWithContext(ctx, "udp4", addr, config)
+
+    conn, err = dtls.Dial("udp4", addr, config)
+    // https://github.com/pion/dtls/pull/649
     if err != nil {
         base.Error(err)
         close(cSess.DtlsSetupChan) // 没有成功建立 DTLS 隧道
@@ -73,7 +72,13 @@ func dtlsChannel(cSess *session.ConnSession) {
     dSess = cSess.DSess
     close(cSess.DtlsSetupChan) // 成功建立 DTLS 隧道
 
-    cSess.DTLSCipherSuite = dtls.CipherSuiteName(conn.ConnectionState().CipherSuiteID)
+    // rewrite cSess.DTLSCipherSuite
+    state, success := conn.ConnectionState()
+    if success {
+        cSess.DTLSCipherSuite = dtls.CipherSuiteName(state.CipherSuiteID)
+    } else {
+        cSess.DTLSCipherSuite = ""
+    }
 
     base.Info("dtls channel negotiation succeeded")
 

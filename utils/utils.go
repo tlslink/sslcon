@@ -3,7 +3,7 @@ package utils
 import (
     "crypto/rand"
     "fmt"
-    "github.com/pion/dtls/v2/pkg/protocol"
+    "github.com/pion/dtls/v3/pkg/protocol"
     "net"
     "net/http"
     "os"
@@ -71,23 +71,23 @@ func MakeMasterSecret() ([]byte, error) {
 }
 
 func Min(init int, other ...int) int {
-    min := init
+    minValue := init
     for _, val := range other {
-        if val != 0 && val < min {
-            min = val
+        if val != 0 && val < minValue {
+            minValue = val
         }
     }
-    return min
+    return minValue
 }
 
 func Max(init int, other ...int) int {
-    max := init
+    maxValue := init
     for _, val := range other {
-        if val > max {
-            max = val
+        if val > maxValue {
+            maxValue = val
         }
     }
-    return max
+    return maxValue
 }
 
 func CopyFile(dstName, srcName string) (err error) {
