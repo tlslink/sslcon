@@ -6,7 +6,6 @@ import (
     "github.com/pion/dtls/v2"
     "net"
     "sslcon/base"
-    "sslcon/ciphersuite"
     "sslcon/proto"
     "sslcon/session"
     "strconv"
@@ -54,10 +53,6 @@ func dtlsChannel(cSess *session.ConnSession) {
                 return []dtls.CipherSuiteID{dtls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256}
             }
         }(),
-        // 兼容旧版本 ocserv
-        CustomCipherSuites: func() []dtls.CipherSuite {
-            return []dtls.CipherSuite{&ciphersuite.TLSRsaWithAes128GcmSha256{}}
-        },
         SessionStore: &SessionStore{dtls.Session{ID: id, Secret: session.Sess.PreMasterSecret}},
         // PSK: func(hint []byte) ([]byte, error) {
         //     // return []byte{0xAB, 0xC1, 0x23}, nil
@@ -78,11 +73,8 @@ func dtlsChannel(cSess *session.ConnSession) {
     dSess = cSess.DSess
     close(cSess.DtlsSetupChan) // 成功建立 DTLS 隧道
 
-    if conn.ConnectionState().CipherSuiteID == ciphersuite.TLS_RSA_WITH_AES_128_GCM_SHA256 {
-        cSess.DTLSCipherSuite = "TLS_RSA_WITH_AES_128_GCM_SHA256"
-    } else {
-        cSess.DTLSCipherSuite = dtls.CipherSuiteName(conn.ConnectionState().CipherSuiteID)
-    }
+    cSess.DTLSCipherSuite = dtls.CipherSuiteName(conn.ConnectionState().CipherSuiteID)
+
     base.Info("dtls channel negotiation succeeded")
 
     go payloadOutDTLSToServer(conn, dSess, cSess)
