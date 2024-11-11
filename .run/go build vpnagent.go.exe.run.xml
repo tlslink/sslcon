@@ -5,6 +5,7 @@
     <go_parameters value="-o vpnagent.exe" />
     <sudo value="true" />
     <kind value="FILE" />
+    <package value="sslcon" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$/vpnagent.go" />
     <method v="2" />

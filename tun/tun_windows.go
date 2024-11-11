@@ -1,6 +1,7 @@
 package tun
 
 import (
+    "context"
     "errors"
     "fmt"
     "github.com/lysShub/wintun-go"
@@ -31,7 +32,7 @@ var (
 )
 
 func init() {
-    wintun.Load(wintun.DLL)
+    wintun.MustLoad(wintun.DLL)
 }
 
 func CreateTUN(ifname string, mtu int) (Device, error) {
@@ -60,12 +61,12 @@ func (tun *NativeTun) Read(buff []byte, offset int) (int, error) {
     }
 
     for {
-        packet, err := tun.wt.ReceivePacket()
+        packet, err := tun.wt.Recv(context.Background())
         switch err {
         case nil:
             packetSize := len(packet)
             copy(buff[offset:], packet)
-            tun.wt.ReleasePacket(packet)
+            tun.wt.Release(packet)
             // tun.rate.update(uint64(packetSize))
             return packetSize, nil
         case windows.ERROR_HANDLE_EOF:
@@ -83,12 +84,12 @@ func (tun *NativeTun) Write(buff []byte, offset int) (int, error) {
         return 0, os.ErrClosed
     }
 
-    packetSize := uint32(len(buff) - offset)
+    packetSize := len(buff) - offset
 
-    packet, err := tun.wt.AllocateSendPacket(packetSize)
+    packet, err := tun.wt.Alloc(packetSize)
     if err == nil {
         copy(packet, buff[offset:])
-        err = tun.wt.SendPacket(packet)
+        err = tun.wt.Send(packet)
         if err != nil {
             return 0, err
         }
