@@ -4,19 +4,19 @@ package proto
 // 只用于 tls 数据包，dtls 数据包只有第 6 个字节
 
 var Header = []byte{
-    0x53, 0x54, 0x46, 0x01, // fixed to 0x53 (S) 0x54 (T) 0x46 (F) 0x01
-    0x00, 0x00, // The length of the packet that follows this header in big endian order
-    0x00, // The type of the payload that follows
-    0x00, // fixed to 0x00
+	0x53, 0x54, 0x46, 0x01, // fixed to 0x53 (S) 0x54 (T) 0x46 (F) 0x01
+	0x00, 0x00, // The length of the packet that follows this header in big endian order
+	0x00, // The type of the payload that follows
+	0x00, // fixed to 0x00
 }
 
 // Payload 缓冲区数据结构
 type Payload struct {
-    Type byte // The available payload types
-    Data []byte
+	Type byte // The available payload types
+	Data []byte
 }
 
-// https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-03#section-2.2
+// https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-04#name-the-cstp-channel-protocol
 /*
    var header = []byte{'S', 'T', 'F', 0x01, 0, 0, 0x00, 0}
    +---------------------+---------------------------------------------+
@@ -72,4 +72,4 @@ type Payload struct {
    +---------------------+---------------------------------------------+
 */
 
-// Security https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-03#section-3
+// Security https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-04#name-security-considerations

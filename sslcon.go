@@ -5,5 +5,5 @@ package main
 import "sslcon/cmd"
 
 func main() {
-    cmd.Execute()
+	cmd.Execute()
 }
