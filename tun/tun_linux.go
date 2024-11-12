@@ -19,8 +19,7 @@ import (
 
 	"golang.org/x/net/ipv6"
 	"golang.org/x/sys/unix"
-
-	"sslcon/rwcancel"
+	"sslcon/tun/rwcancel"
 )
 
 const (
