@@ -136,7 +136,7 @@ func CreateTUN(name string, mtu int) (Device, error) {
 		unix.Close(fd)
 		return nil, err
 	}
-	tun, err := CreateTUNFromFile(fd, mtu)
+	tun, err := CreateTUNFromFile(os.NewFile(uintptr(fd), ""), mtu)
 
 	if err == nil && name == "utun" {
 		fname := os.Getenv("WG_TUN_NAME_FILE")
@@ -148,8 +148,7 @@ func CreateTUN(name string, mtu int) (Device, error) {
 	return tun, err
 }
 
-func CreateTUNFromFile(fd int, mtu int) (Device, error) {
-	file := os.NewFile(uintptr(fd), "")
+func CreateTUNFromFile(file *os.File, mtu int) (Device, error) {
 	tun := &NativeTun{
 		tunFile: file,
 		events:  make(chan Event, 10),

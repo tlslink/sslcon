@@ -1,10 +1,15 @@
 package base
 
+/*
+extern void osLog(const char *message);
+*/
+import "C"
 import (
 	"fmt"
 	"log"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 )
 
@@ -98,7 +103,11 @@ func logLevel2Int(l string) int {
 
 func output(l int, s ...interface{}) {
 	lvl := fmt.Sprintf("[%s] ", levels[l])
-	_ = baseLogger.Output(3, lvl+fmt.Sprintln(s...))
+	if baseWriter.UseStdout && (runtime.GOOS == "ios" || runtime.GOOS == "android") {
+		C.osLog(C.CString(lvl + fmt.Sprintln(s...)))
+	} else {
+		_ = baseLogger.Output(3, lvl+fmt.Sprintln(s...))
+	}
 }
 
 func Debug(v ...interface{}) {

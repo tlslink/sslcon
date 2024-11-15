@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"runtime"
 	"strings"
 
 	"sslcon/auth"
@@ -17,6 +19,7 @@ import (
 
 var (
 	reqHeaders = make(map[string]string)
+	tunnel     *http.Response
 )
 
 func init() {
@@ -30,11 +33,11 @@ func init() {
 }
 
 func initTunnel() {
-	// https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-03#section-2.1.3
+	// https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-04#name-server-response-and-tunnel-
 	reqHeaders["Cookie"] = "webvpn=" + session.Sess.SessionToken // 无论什么服务端都需要通过 Cookie 发送 Session
 	reqHeaders["X-CSTP-Local-VPNAddress-IP4"] = base.LocalInterface.Ip4
 
-	// Legacy Establishment of Secondary UDP Channel https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-02#section-2.1.5.1
+	// Legacy Establishment of Secondary UDP Channel https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-04#name-the-secondary-dtls-channel-
 	// worker-vpn.c WSPCONFIG(ws)->udp_port != 0 && req->master_secret_set != 0 否则 disabling UDP (DTLS) connection
 	// 如果开启 dtls_psk（默认开启，见配置说明） 且 CipherSuite 包含 PSK-NEGOTIATE（仅限ocserv），worker-http.c 自动设置 req->master_secret_set = 1
 	// 此时无需手动设置 Secret，会自动协商建立 dtls 链接，AnyConnect 客户端不支持
@@ -65,20 +68,18 @@ func SetupTunnel() error {
 		auth.Conn.Close()
 		return err
 	}
-	var resp *http.Response
+
 	// resp.Body closed when tlsChannel exit
-	resp, err = http.ReadResponse(auth.BufR, req)
+	tunnel, err = http.ReadResponse(auth.BufR, req)
 	if err != nil {
 		auth.Conn.Close()
 		return err
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if tunnel.StatusCode != http.StatusOK {
 		auth.Conn.Close()
-		return fmt.Errorf("tunnel negotiation failed %s", resp.Status)
+		return fmt.Errorf("tunnel negotiation failed %s", tunnel.Status)
 	}
-	// 协商成功，读取服务端返回的配置
-	// https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-03#section-2.1.3
 
 	// 提前判断是否调试模式，避免不必要的转换，http.ReadResponse.Header 将首字母大写，其余小写，即使服务端调试时正常
 	if base.Cfg.LogLevel == "Debug" {
@@ -86,41 +87,91 @@ func SetupTunnel() error {
 		buf := bytes.NewBuffer(headers)
 		// http.ReadResponse: Keys in the map are canonicalized (see CanonicalHeaderKey).
 		// https://ron-liu.medium.com/what-canonical-http-header-mean-in-golang-2e97f854316d
-		_ = resp.Header.Write(buf)
+		_ = tunnel.Header.Write(buf)
 		base.Debug(buf.String())
 	}
 
-	cSess := session.Sess.NewConnSession(&resp.Header)
+	// 协商成功，读取服务端返回的配置
+	// https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-04#name-tunnel-and-channels-establi
+
+	cSess := session.Sess.NewConnSession(&tunnel.Header)
 	cSess.ServerAddress = strings.Split(auth.Conn.RemoteAddr().String(), ":")[0]
 	cSess.Hostname = auth.Prof.Host
 	cSess.TLSCipherSuite = tls.CipherSuiteName(auth.Conn.ConnectionState().CipherSuite)
 
-	err = setupTun(cSess)
+	base.Info("tls channel negotiation succeeded")
+
+	// go 不存在条件编译，要么用 垃圾代码+dummy 内容，要么用独立文件
+	if runtime.GOOS == "windows" || runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+		// 只有 tun 和路由设置成功才会进行下一步
+		err = setupTun(0)
+		if err != nil {
+			auth.Conn.Close()
+			cSess.Close()
+			return err
+		}
+
+		// 为了靠谱，不再异步设置，路由多的话可能要等等
+		err = vpnc.SetRoutes(cSess)
+		if err != nil {
+			auth.Conn.Close()
+			cSess.Close()
+			return err
+		}
+
+		SetupChannel()
+	}
+
+	return nil
+}
+
+func SetupTun(fd int) error {
+	cSess := session.Sess.CSess
+
+	err := setupTun(fd)
 	if err != nil {
 		auth.Conn.Close()
 		cSess.Close()
 		return err
 	}
+	return nil
+}
 
-	// 为了靠谱，不再异步设置，路由多的话可能要等等
-	err = vpnc.SetRoutes(cSess)
-	if err != nil {
-		auth.Conn.Close()
-		cSess.Close()
+func SetupChannel() {
+	// https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-04#name-the-primary-cstp-channel-tc
+	go tlsChannel()
+
+	if !base.Cfg.NoDTLS {
+		// https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-04#name-the-secondary-dtls-channel-
+		go dtlsChannel()
 	}
-	base.Info("tls channel negotiation succeeded")
 
-	// 只有网卡和路由设置成功才会进行下一步
-	// https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-03#section-2.1.4
-	go tlsChannel(auth.Conn, auth.BufR, cSess, resp)
-
-	if !base.Cfg.NoDTLS && cSess.DTLSPort != "" {
-		// https://datatracker.ietf.org/doc/html/draft-mavrogiannopoulos-openconnect-03#section-2.1.5
-		go dtlsChannel(cSess)
-	}
+	cSess := session.Sess.CSess
 
 	cSess.DPDTimer()
 	cSess.ReadDeadTimer()
+}
 
-	return err
+func Status() []byte {
+	cSess := session.Sess.CSess
+	if cSess != nil {
+		if !base.Cfg.NoDTLS && cSess.DTLSPort != "" {
+			// 等待 DTLS 隧道创建过程结束，无论隧道是否建立成功
+			<-cSess.DtlsSetupChan
+		}
+		status, _ := json.Marshal(cSess)
+		return status
+	}
+	return nil
+}
+
+// DisConnect 主动断开或者 ctrl+c，不包括网络或tun异常退出
+func DisConnect() {
+	session.Sess.ActiveClose = true
+	cSess := session.Sess.CSess
+
+	if cSess != nil {
+		vpnc.ResetRoutes(cSess)
+		cSess.Close()
+	}
 }

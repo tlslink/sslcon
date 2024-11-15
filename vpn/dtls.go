@@ -14,7 +14,9 @@ import (
 )
 
 // 新建 dtls.Conn
-func dtlsChannel(cSess *session.ConnSession) {
+func dtlsChannel() {
+	cSess := session.Sess.CSess
+	// cSess.DTLSPort != ""
 	var (
 		conn          *dtls.Conn
 		dSess         *session.DtlsSession

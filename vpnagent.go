@@ -1,4 +1,4 @@
-//go:build linux || darwin || windows
+//go:build windows || (linux && !android) || (darwin && !ios)
 
 package main
 
@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/kardianos/service"
+	"sslcon/api"
 	"sslcon/base"
 	"sslcon/rpc"
 	"sslcon/svc"
@@ -51,7 +52,7 @@ func watchSignal() {
 		switch sig {
 		default:
 			base.Info("Stop")
-			rpc.DisConnect()
+			api.DisConnect()
 			return
 		}
 	}

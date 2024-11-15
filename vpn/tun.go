@@ -1,3 +1,5 @@
+//go:build windows || (linux && !android) || (darwin && !ios)
+
 package vpn
 
 import (
@@ -15,7 +17,8 @@ import (
 
 var offset = 0 // reserve space for header
 
-func setupTun(cSess *session.ConnSession) error {
+func setupTun(fd int) error {
+	cSess := session.Sess.CSess
 	if runtime.GOOS == "windows" {
 		cSess.TunName = "SSLCon"
 	} else if runtime.GOOS == "darwin" {
@@ -45,6 +48,8 @@ func setupTun(cSess *session.ConnSession) error {
 
 	go tunToPayloadOut(dev, cSess) // read from apps
 	go payloadInToTun(dev, cSess)  // write to apps
+
+	_ = fd
 	return nil
 }
 

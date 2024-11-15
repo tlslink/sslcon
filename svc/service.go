@@ -5,6 +5,7 @@ import (
 	"runtime"
 
 	"github.com/kardianos/service"
+	"sslcon/api"
 	"sslcon/base"
 	"sslcon/rpc"
 )
@@ -45,7 +46,7 @@ func (p program) Start(s service.Service) error {
 func (p program) Stop(s service.Service) error {
 	logger.Info("I'm Stopping!")
 	base.Info("Stop")
-	rpc.DisConnect()
+	api.DisConnect()
 	return nil
 }
 
@@ -91,7 +92,7 @@ func UninstallSvc() {
 	if err != nil {
 		fmt.Println("Cannot create the service: " + err.Error())
 	} else {
-		err := svc.Stop()
+		err = svc.Stop()
 		if err != nil {
 			fmt.Println("Cannot stop the service: " + err.Error())
 		}

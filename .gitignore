@@ -10,3 +10,6 @@ test
 vpnagent
 sslcon
 *.exe
+libsslcon.h
+libsslcon.a
+libsslcon.so

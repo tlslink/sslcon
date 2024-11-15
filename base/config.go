@@ -23,7 +23,7 @@ type Interface struct {
 	Gateway string `json:"gateway"`
 }
 
-func initCfg() {
+func init() {
 	Cfg.LogLevel = "Debug"
 	Cfg.InsecureSkipVerify = true
 	Cfg.CiscoCompat = true

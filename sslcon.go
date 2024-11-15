@@ -1,4 +1,4 @@
-//go:build linux || darwin || windows
+//go:build windows || (linux && !android) || (darwin && !ios)
 
 package main
 

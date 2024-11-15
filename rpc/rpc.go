@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/sourcegraph/jsonrpc2"
 	ws "github.com/sourcegraph/jsonrpc2/websocket"
+	"sslcon/api"
 	"sslcon/auth"
 	"sslcon/base"
 	"sslcon/session"
@@ -86,7 +87,7 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 			_ = conn.Reply(ctx, req.ID, session.Sess.CSess.Stat)
 			return
 		}
-		jError := jsonrpc2.Error{Code: 1, Message: disconnectedStr}
+		jError := jsonrpc2.Error{Code: 1, Message: "ready to connect"}
 		_ = conn.ReplyWithError(ctx, req.ID, &jError)
 	case STATUS:
 		// 未连接之前不应该调用这里
@@ -95,14 +96,11 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 				// 等待 DTLS 隧道创建过程结束，无论隧道是否建立成功
 				<-session.Sess.CSess.DtlsSetupChan
 			}
-
-			if session.Sess.CSess != nil {
-				_ = conn.Reply(ctx, req.ID, session.Sess.CSess)
-				return
-			}
+			_ = conn.Reply(ctx, req.ID, session.Sess.CSess)
+			return
 		}
 
-		jError := jsonrpc2.Error{Code: 1, Message: disconnectedStr}
+		jError := jsonrpc2.Error{Code: 1, Message: "ready to connect"}
 		_ = conn.ReplyWithError(ctx, req.ID, &jError)
 	case CONNECT:
 		// 启动时未连接，其它 UI 连接后再次调用
@@ -116,12 +114,12 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 			_ = conn.ReplyWithError(ctx, req.ID, &jError)
 			return
 		}
-		err = Connect()
+		err = api.Connect()
 		if err != nil {
 			base.Error(err)
 			jError := jsonrpc2.Error{Code: 1, Message: err.Error()}
 			_ = conn.ReplyWithError(ctx, req.ID, &jError)
-			DisConnect()
+			api.DisConnect()
 			return
 		}
 		connectedStr = "connected to " + auth.Prof.Host
@@ -134,19 +132,19 @@ func (_ *handler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 			_ = conn.Reply(ctx, req.ID, connectedStr)
 			return
 		}
-		err := SetupTunnel(true)
+		err := api.SetupTunnel(true)
 		if err != nil {
 			base.Error(err)
 			jError := jsonrpc2.Error{Code: 1, Message: err.Error()}
 			_ = conn.ReplyWithError(ctx, req.ID, &jError)
-			DisConnect()
+			api.DisConnect()
 			return
 		}
 		_ = conn.Reply(ctx, req.ID, connectedStr)
 		go monitor()
 	case DISCONNECT:
 		if session.Sess.CSess != nil {
-			DisConnect()
+			api.DisConnect()
 		} else {
 			jError := jsonrpc2.Error{Code: 1, Message: disconnectedStr}
 			_ = conn.ReplyWithError(ctx, req.ID, &jError)

@@ -1,10 +1,9 @@
-package rpc
+package api
 
 import (
 	"strings"
 
 	"sslcon/auth"
-	"sslcon/session"
 	"sslcon/utils/vpnc"
 	"sslcon/vpn"
 )
@@ -47,11 +46,19 @@ func SetupTunnel(reconnect bool) error {
 	return vpn.SetupTunnel()
 }
 
+func SetupTun(fd int) error {
+	return vpn.SetupTun(fd)
+}
+
+func SetupChannel() {
+	vpn.SetupChannel()
+}
+
+func Status() []byte {
+	return vpn.Status()
+}
+
 // DisConnect 主动断开或者 ctrl+c，不包括网络或tun异常退出
 func DisConnect() {
-	session.Sess.ActiveClose = true
-	if session.Sess.CSess != nil {
-		vpnc.ResetRoutes(session.Sess.CSess) // 蛋疼的循环引用
-		session.Sess.CSess.Close()
-	}
+	vpn.DisConnect()
 }
