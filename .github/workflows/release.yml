@@ -18,39 +18,39 @@ jobs:
         build: [linux, linux-riscv64, linux-arm64, linux-armv7, linux-mipsle, windows, windows-arm64, macos, macos-arm64]
         include:
         - build: linux
-          os: ubuntu-20.04
+          os: ubuntu-22.04
           go: 'stable'
           archive-name: sslcon-linux-amd64.tar.gz
         - build: linux-riscv64
-          os: ubuntu-20.04
+          os: ubuntu-22.04
           go: 'stable'
           archive-name: sslcon-linux-riscv64.tar.gz
         - build: linux-arm64
-          os: ubuntu-20.04
+          os: ubuntu-22.04
           go: 'stable'
           archive-name: sslcon-linux-arm64.tar.gz
         - build: linux-armv7
-          os: ubuntu-20.04
+          os: ubuntu-22.04
           go: 'stable'
           archive-name: sslcon-linux-armv7.tar.gz
         - build: linux-mipsle
-          os: ubuntu-20.04
+          os: ubuntu-22.04
           go: 'stable'
           archive-name: sslcon-linux-mipsle.tar.gz
         - build: windows
-          os: windows-2019
+          os: windows-2022
           go: 'stable'
           archive-name: sslcon-windows10-amd64.7z
         - build: windows-arm64
-          os: windows-2019
+          os: windows-2022
           go: 'stable'
           archive-name: sslcon-windows10-arm64.7z
         - build: macos
-          os: macos-12
+          os: macos-latest
           go: 'stable'
           archive-name: sslcon-macOS-amd64.tar.gz
         - build: macos-arm64
-          os: macos-14
+          os: macos-latest
           go: 'stable'
           archive-name: sslcon-macOS-arm64.tar.gz
     steps:

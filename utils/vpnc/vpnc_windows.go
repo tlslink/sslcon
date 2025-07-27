@@ -180,6 +180,9 @@ func routingError(dst netip.Prefix, err error) error {
 func execCmd(cmdStrs []string) error {
 	for _, cmdStr := range cmdStrs {
 		cmd := exec.Command("cmd", "/C", cmdStr)
+		// reset env
+		cmd.Env = []string{"Path=C:\\WINDOWS\\system32;C:\\WINDOWS"}
+		// println(strings.Join(cmd.Env, "\n"))
 		stdoutStderr, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("%s %s %s", err, cmd.String(), string(stdoutStderr))
