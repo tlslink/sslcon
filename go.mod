@@ -1,45 +1,47 @@
 module sslcon
 
-go 1.21
+go 1.23.0
 
 require (
-	github.com/elastic/go-sysinfo v1.13.1
-	github.com/gopacket/gopacket v1.2.0
-	github.com/gorilla/websocket v1.5.1
-	github.com/jackpal/gateway v1.0.13
+	github.com/apieasy/gson v0.2.2
+	github.com/elastic/go-sysinfo v1.15.0
+	github.com/gopacket/gopacket v1.3.0
+	github.com/gorilla/websocket v1.5.3
+	github.com/jackpal/gateway v1.0.15
 	github.com/kardianos/service v1.2.2
-	github.com/lysShub/wintun-go v0.0.0-20240131112415-8f3bf638af49
-	github.com/pion/dtls/v2 v2.2.8-0.20240201071732-2597464081c8
+	github.com/lysShub/wintun-go v0.0.0-20240606130541-1acbbbe408f3
+	github.com/pion/dtls/v3 v3.0.4
 	github.com/sourcegraph/jsonrpc2 v0.2.0
-	github.com/spf13/cobra v1.8.0
-	github.com/tlslink/simplejson v0.0.0-20230709141507-130316fc6e67
-	github.com/vishvananda/netlink v1.2.1-beta.2.0.20240223175432-6ab7f5a3765c
+	github.com/spf13/cobra v1.8.1
+	github.com/vishvananda/netlink v1.3.0
 	go.uber.org/atomic v1.11.0
-	golang.org/x/crypto v0.19.0
-	golang.org/x/net v0.21.0
-	golang.org/x/sys v0.17.0
+	golang.org/x/crypto v0.29.0
+	golang.org/x/net v0.31.0
+	golang.org/x/sys v0.27.0
 	golang.zx2c4.com/wireguard/windows v0.5.3
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/ebitengine/purego v0.5.1 // indirect
-	github.com/elastic/go-windows v1.0.0 // indirect
+	github.com/elastic/go-windows v1.0.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901 // indirect
-	github.com/lysShub/dll-go v0.0.0-20240131092034-3f09ae5eff72 // indirect
+	github.com/lysShub/divert-go v0.0.0-20240811192723-79d7e0ef450e // indirect
 	github.com/pion/logging v0.2.2 // indirect
-	github.com/pion/transport/v3 v3.0.1 // indirect
+	github.com/pion/transport/v3 v3.0.7 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/procfs v0.8.0 // indirect
+	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/objx v0.5.1 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
-	github.com/vishvananda/netns v0.0.4 // indirect
-	golang.org/x/term v0.17.0 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
+	github.com/tidwall/gjson v1.18.0 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
+	github.com/tidwall/sjson v1.2.5 // indirect
+	github.com/vishvananda/netns v0.0.5 // indirect
+	golang.org/x/term v0.26.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	howett.net/plist v0.0.0-20181124034731-591f970eefbb // indirect
+	howett.net/plist v1.0.1 // indirect
 )
 
 replace github.com/kardianos/service v1.2.2 => github.com/cuonglm/service v0.0.0-20230322120818-ee0647d95905

@@ -17,27 +17,27 @@ jobs:
     strategy:
       matrix:
         # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners
-        os: [ubuntu-20.04, windows-2019, macos-14]
+        os: [ubuntu-latest, ubuntu-22.04-arm, windows-latest, windows-11-arm, macos-latest]
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
-        go-version: 1.22.0
+        go-version: 'stable'
     - name: Install dependencies
       run: go get .
     - name: Build
       shell: bash
       run: |
-        if [ "${{ matrix.os }}" = "ubuntu-20.04" ]; then
+        if [[ "${{ matrix.os }}" == ubuntu* ]]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
           go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
-        elif [ "${{ matrix.os }}" = "windows-2019" ]; then
+        elif [[ "${{ matrix.os }}" == windows* ]]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent.exe vpnagent.go
           go build -trimpath -ldflags "-s -w" -o sslcon.exe sslcon.go
-        elif [ "${{ matrix.os }}" = "macos-14" ]; then
+        elif [[ "${{ matrix.os }}" == macos* ]]; then
           go build -trimpath -ldflags "-s -w" -o vpnagent vpnagent.go
           go build -trimpath -ldflags "-s -w" -o sslcon sslcon.go
         fi
