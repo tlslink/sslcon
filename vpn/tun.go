@@ -2,15 +2,17 @@ package vpn
 
 import (
 	"runtime"
+	"sync"
 
-	"github.com/gopacket/gopacket"
-	"github.com/gopacket/gopacket/layers"
 	"sslcon/base"
 	"sslcon/proto"
 	"sslcon/session"
 	"sslcon/tun"
 	"sslcon/utils"
 	"sslcon/utils/vpnc"
+
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 )
 
 var offset = 0 // reserve space for header
@@ -163,44 +165,60 @@ func dynamicSplitRoutes(data []byte, cSess *session.ConnSession) {
 	packet := gopacket.NewPacket(data, layers.LayerTypeIPv4, gopacket.Default)
 	dnsLayer := packet.Layer(layers.LayerTypeDNS)
 	if dnsLayer != nil {
-		dns, _ := dnsLayer.(*layers.DNS)
+		return
+	}
 
-		query := string(dns.Questions[0].Name)
-		// base.Debug("Query:", query)
-
-		if utils.InArrayGeneric(cSess.DynamicSplitIncludeDomains, query) {
-			// 分析流量后才知道请求的域名，即使已经设置路由，仍然需要分析流量，不可避免的 overhead
-			if _, ok := cSess.DynamicSplitIncludeResolved.Load(query); !ok && dns.ANCount > 0 {
-				var answers []string
-				for _, v := range dns.Answers {
-					// log.Printf("DNS Answer: %+v", v)
-					if v.Type == layers.DNSTypeA {
-						// fmt.Println("Name:", string(v.Name)) // cname, canonical name
-						// base.Debug("Address:", v.IP.String())
-						answers = append(answers, v.IP.String())
-					}
-				}
-				if len(answers) > 0 {
-					cSess.DynamicSplitIncludeResolved.Store(query, answers)
-					vpnc.DynamicAddIncludeRoutes(answers)
-				}
-			}
-		} else if utils.InArrayGeneric(cSess.DynamicSplitExcludeDomains, query) {
-			if _, ok := cSess.DynamicSplitExcludeResolved.Load(query); !ok && dns.ANCount > 0 {
-				var answers []string
-				for _, v := range dns.Answers {
-					// log.Printf("DNS Answer: %+v", v)
-					if v.Type == layers.DNSTypeA {
-						// fmt.Println("Name:", string(v.Name)) // cname, canonical name
-						// base.Debug("Address:", v.IP.String())
-						answers = append(answers, v.IP.String())
-					}
-				}
-				if len(answers) > 0 {
-					cSess.DynamicSplitExcludeResolved.Store(query, answers)
-					vpnc.DynamicAddExcludeRoutes(answers)
-				}
+	dns, _ := dnsLayer.(*layers.DNS)
+	var answers []string
+	if len(dns.Questions) > 0 && dns.ANCount > 0 {
+		for _, answer := range dns.Answers {
+			if answer.Type == layers.DNSTypeA {
+				answers = append(answers, answer.IP.String())
 			}
 		}
+	}
+	if len(answers) == 0 {
+		return
+	}
+	query := string(dns.Questions[0].Name)
+	// base.Debug("Query:", query)
+
+	// 域名拆分处理函数
+	handleFunc := func(splitDomains []string, resolved *sync.Map, splitRoutesFunc func([]string)) {
+		if old, ok := resolved.Load(query); !ok {
+			// 第一次解析，更新缓存并修改路由
+			resolved.Store(query, answers)
+			splitRoutesFunc(answers)
+		} else {
+			// 已存在解析记录，找出新增的ip进行更新
+			oldAnswers := old.([]string)
+			oldSet := make(map[string]struct{})
+			for _, ip := range oldAnswers {
+				oldSet[ip] = struct{}{}
+			}
+			// 找出新增的IP
+			var newAnswers []string
+			for _, ip := range answers {
+				if _, exists := oldSet[ip]; !exists {
+					newAnswers = append(newAnswers, ip)
+				}
+			}
+			if len(newAnswers) > 0 {
+				// 合并新旧结果并更新缓存
+				mergedAnswers := append(oldAnswers, newAnswers...)
+				resolved.Store(query, mergedAnswers)
+				// 处理新增的部分
+				splitRoutesFunc(newAnswers)
+			}
+		}
+	}
+
+	// 使用域名拆分列表匹配当前查询的域名，命中则尝试更新路由规则
+	if utils.InArrayGeneric(cSess.DynamicSplitIncludeDomains, query) {
+		// 处理包含域名
+		handleFunc(cSess.DynamicSplitIncludeDomains, &cSess.DynamicSplitIncludeResolved, vpnc.DynamicAddIncludeRoutes)
+	} else if utils.InArrayGeneric(cSess.DynamicSplitExcludeDomains, query) {
+		// 处理排除域名
+		handleFunc(cSess.DynamicSplitExcludeDomains, &cSess.DynamicSplitExcludeResolved, vpnc.DynamicAddExcludeRoutes)
 	}
 }
