@@ -164,7 +164,7 @@ func payloadInToTun(dev tun.Device, cSess *session.ConnSession) {
 func dynamicSplitRoutes(data []byte, cSess *session.ConnSession) {
 	packet := gopacket.NewPacket(data, layers.LayerTypeIPv4, gopacket.Default)
 	dnsLayer := packet.Layer(layers.LayerTypeDNS)
-	if dnsLayer != nil {
+	if dnsLayer == nil {
 		return
 	}
 
@@ -184,7 +184,7 @@ func dynamicSplitRoutes(data []byte, cSess *session.ConnSession) {
 	// base.Debug("Query:", query)
 
 	// 域名拆分处理函数
-	handleFunc := func(splitDomains []string, resolved *sync.Map, splitRoutesFunc func([]string)) {
+	handleFunc := func(resolved *sync.Map, splitRoutesFunc func([]string)) {
 		if old, ok := resolved.Load(query); !ok {
 			// 第一次解析，更新缓存并修改路由
 			resolved.Store(query, answers)
@@ -216,9 +216,9 @@ func dynamicSplitRoutes(data []byte, cSess *session.ConnSession) {
 	// 使用域名拆分列表匹配当前查询的域名，命中则尝试更新路由规则
 	if utils.InArrayGeneric(cSess.DynamicSplitIncludeDomains, query) {
 		// 处理包含域名
-		handleFunc(cSess.DynamicSplitIncludeDomains, &cSess.DynamicSplitIncludeResolved, vpnc.DynamicAddIncludeRoutes)
+		handleFunc(&cSess.DynamicSplitIncludeResolved, vpnc.DynamicAddIncludeRoutes)
 	} else if utils.InArrayGeneric(cSess.DynamicSplitExcludeDomains, query) {
 		// 处理排除域名
-		handleFunc(cSess.DynamicSplitExcludeDomains, &cSess.DynamicSplitExcludeResolved, vpnc.DynamicAddExcludeRoutes)
+		handleFunc(&cSess.DynamicSplitExcludeResolved, vpnc.DynamicAddExcludeRoutes)
 	}
 }
