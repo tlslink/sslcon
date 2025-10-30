@@ -102,7 +102,8 @@ func SetupTunnel() error {
 	base.Info("tls channel negotiation succeeded")
 
 	// go 不存在条件编译，要么用 垃圾代码+dummy 内容，要么用独立文件
-	if runtime.GOOS == "windows" || runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+	// runtime.GOOS 实际值为编译时的 GOOS，如编译时为 ios，即使在 mac 上运行也是 ios
+	if runtime.GOOS == "windows" || runtime.GOOS == "linux" /*|| runtime.GOOS == "darwin"*/ {
 		// 只有 tun 和路由设置成功才会进行下一步
 		err = setupTun(0)
 		if err != nil {
@@ -155,11 +156,9 @@ func SetupChannel() {
 func Status() []byte {
 	cSess := session.Sess.CSess
 	if cSess != nil {
-		if !base.Cfg.NoDTLS && cSess.DTLSPort != "" {
-			// 等待 DTLS 隧道创建过程结束，无论隧道是否建立成功
-			<-cSess.DtlsSetupChan
-		}
 		status, _ := json.Marshal(cSess)
+		base.Debug(string(status))
+
 		return status
 	}
 	return nil

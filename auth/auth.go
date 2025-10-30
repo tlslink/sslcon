@@ -10,12 +10,10 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"runtime"
 	"strings"
 	"text/template"
 	"time"
 
-	"github.com/elastic/go-sysinfo"
 	"sslcon/base"
 	"sslcon/proto"
 	"sslcon/session"
@@ -67,18 +65,18 @@ func init() {
 
 	Prof.Scheme = "https://"
 
-	host, _ := sysinfo.Host()
-	info := host.Info()
-	Prof.ComputerName = info.Hostname
-	Prof.UniqueId = info.UniqueID
+	// host, _ := sysinfo.Host()
+	// info := host.Info()
+	// Prof.ComputerName = info.Hostname
+	// Prof.UniqueId = info.UniqueID
 
-	os := info.OS
-	Prof.DeviceType = os.Name
-	if runtime.GOOS == "windows" {
-		Prof.PlatformVersion = os.Build
-	} else {
-		Prof.PlatformVersion = strings.Split(os.Version, " ")[0]
-	}
+	// os := info.OS
+	// Prof.DeviceType = os.Name
+	// if runtime.GOOS == "windows" {
+	// 	Prof.PlatformVersion = os.Build
+	// } else {
+	// 	Prof.PlatformVersion = strings.Split(os.Version, " ")[0]
+	// }
 	// log.Printf("%+v %+v", info, os)
 }
 

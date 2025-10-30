@@ -1,4 +1,4 @@
-//go:build android || ios
+//go:build android || ios || darwin
 
 package vpn
 
@@ -21,15 +21,14 @@ func setupTun(fd int) error {
 	if runtime.GOOS == "android" {
 		tunFile = os.NewFile(uintptr(fd), "/dev/net/tun")
 	} else {
+		// ios
+		offset = 4
 		tunFile = os.NewFile(uintptr(fd), "")
 	}
-	dev, err := tun.CreateTUNFromFile(tunFile, cSess.MTU)
+	dev, err := tun.CreateTUNFromFile(tunFile, 0)
 	if err != nil {
 		base.Error("failed to creates a new tun interface")
 		return err
-	}
-	if runtime.GOOS == "darwin" {
-		offset = 4
 	}
 
 	cSess.TunName, _ = dev.Name()
@@ -38,8 +37,8 @@ func setupTun(fd int) error {
 
 	// the tun device should already be configured
 
-	// go tunToPayloadOut(dev, cSess) // read from apps
-	// go payloadInToTun(dev, cSess)  // write to apps
+	go tunToPayloadOut(dev, cSess) // read from apps
+	go payloadInToTun(dev, cSess)  // write to apps
 
 	return nil
 }

@@ -16,7 +16,10 @@ import (
 // 新建 dtls.Conn
 func dtlsChannel() {
 	cSess := session.Sess.CSess
-	// cSess.DTLSPort != ""
+	if cSess.DTLSPort == "" {
+		base.Error("remote dtls port is empty")
+		return
+	}
 	var (
 		conn          *dtls.Conn
 		dSess         *session.DtlsSession
@@ -35,6 +38,8 @@ func dtlsChannel() {
 	}()
 
 	port, _ := strconv.Atoi(cSess.DTLSPort)
+	base.Debug("11111111111")
+
 	addr := &net.UDPAddr{IP: net.ParseIP(cSess.ServerAddress), Port: port}
 
 	id, _ := hex.DecodeString(cSess.DTLSId)
@@ -63,25 +68,25 @@ func dtlsChannel() {
 		// },
 		// PSKIdentityHint: id,
 	}
-
+	base.Debug("11111111111")
 	conn, err = dtls.Dial("udp4", addr, config)
+	base.Debug("22222222222")
+
 	// https://github.com/pion/dtls/pull/649
 	if err != nil {
 		base.Error(err)
-		close(cSess.DtlsSetupChan) // 没有成功建立 DTLS 隧道
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	if err = conn.HandshakeContext(ctx); err != nil {
 		base.Error(err)
-		close(cSess.DtlsSetupChan) // 没有成功建立 DTLS 隧道
 		return
 	}
+	base.Debug("3333333333")
 
 	cSess.DtlsConnected.Store(true)
 	dSess = cSess.DSess
-	close(cSess.DtlsSetupChan) // 成功建立 DTLS 隧道
 
 	// rewrite cSess.DTLSCipherSuite
 	state, success := conn.ConnectionState()

@@ -90,7 +90,6 @@ func (sess *Session) NewConnSession(header *http.Header) *ConnSession {
 		Stat:              &stat{0, 0},
 		closeOnce:         sync.Once{},
 		CloseChan:         make(chan struct{}),
-		DtlsSetupChan:     make(chan struct{}),
 		PayloadIn:         make(chan *proto.Payload, 64),
 		PayloadOutTLS:     make(chan *proto.Payload, 64),
 		PayloadOutDTLS:    make(chan *proto.Payload, 64),
