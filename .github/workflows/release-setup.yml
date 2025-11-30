@@ -1,26 +1,27 @@
-name: Release Setup
+name: Setup
 
 on:
   workflow_call
 
 jobs:
   release:
-    name: "Continuous Release"
+    name: "Release Setup"
     runs-on: ubuntu-latest
     steps:
-    - name: Job info
-      run: |
-        echo "GitHub Ref: ${{ github.ref }}"
-    - name: Delete old workflow runs
-      uses: Mattraks/delete-workflow-runs@main
-      with:
-        retain_days: 2
-        keep_minimum_runs: 2
-    - name: Automatic release
-      uses: "marvinpinto/action-automatic-releases@latest"
-      if: startsWith(github.ref, 'refs/heads/')
-      with:
-        repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        automatic_release_tag: "continuous"
-        prerelease: true
-        title: "Continuous release"
+      - name: Job info
+        run: |
+          echo "GitHub Ref: ${{ github.ref }}"
+
+      - name: Delete old workflow runs
+        uses: Mattraks/delete-workflow-runs@main
+        with:
+          retain_days: 2
+          keep_minimum_runs: 2
+
+      - uses: actions/checkout@v4
+      - name: Delete latest tag
+        if: github.ref_type == 'branch'
+        continue-on-error: true
+        run: gh release delete latest --cleanup-tag
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

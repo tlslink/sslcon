@@ -17,38 +17,38 @@ jobs:
       matrix:
         build: [linux, linux-arm64, linux-armv7, linux-riscv64, linux-mipsle, windows, windows-arm64, macos-arm64]
         include:
-        - build: linux
-          os: ubuntu-22.04
-          go: 'stable'
-          archive-name: sslcon-linux-amd64.tar.gz
-        - build: linux-arm64
-          os: ubuntu-22.04-arm
-          go: 'stable'
-          archive-name: sslcon-linux-arm64.tar.gz
-        - build: linux-armv7
-          os: ubuntu-22.04
-          go: 'stable'
-          archive-name: sslcon-linux-armv7.tar.gz
-        - build: linux-riscv64
-          os: ubuntu-22.04
-          go: 'stable'
-          archive-name: sslcon-linux-riscv64.tar.gz
-        - build: linux-mipsle
-          os: ubuntu-22.04
-          go: 'stable'
-          archive-name: sslcon-linux-mipsle.tar.gz
-        - build: windows
-          os: windows-2022
-          go: 'stable'
-          archive-name: sslcon-windows10-amd64.7z
-        - build: windows-arm64
-          os: windows-11-arm
-          go: 'stable'
-          archive-name: sslcon-windows10-arm64.7z
-        - build: macos-arm64
-          os: macos-14
-          go: 'stable'
-          archive-name: sslcon-macOS-arm64.tar.gz
+          - build: linux
+            os: ubuntu-22.04
+            go: 'stable'
+            archive-name: sslcon-linux-amd64.tar.gz
+          - build: linux-arm64
+            os: ubuntu-22.04-arm
+            go: 'stable'
+            archive-name: sslcon-linux-arm64.tar.gz
+          - build: linux-armv7
+            os: ubuntu-22.04
+            go: 'stable'
+            archive-name: sslcon-linux-armv7.tar.gz
+          - build: linux-riscv64
+            os: ubuntu-22.04
+            go: 'stable'
+            archive-name: sslcon-linux-riscv64.tar.gz
+          - build: linux-mipsle
+            os: ubuntu-22.04
+            go: 'stable'
+            archive-name: sslcon-linux-mipsle.tar.gz
+          - build: windows
+            os: windows-2022
+            go: 'stable'
+            archive-name: sslcon-windows10-amd64.7z
+          - build: windows-arm64
+            os: windows-11-arm
+            go: 'stable'
+            archive-name: sslcon-windows10-arm64.7z
+          - build: macos-arm64
+            os: macos-14
+            go: 'stable'
+            archive-name: sslcon-macOS-arm64.tar.gz
     steps:
     - uses: actions/checkout@v4
       with:
@@ -102,17 +102,10 @@ jobs:
           cd archive
           tar -czf "${{ matrix.archive-name }}" LICENSE README.md vpnagent sslcon
         fi
-    - name: Continuous release
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/heads/')
-      with:
-        prerelease: false
-        files: archive/${{ matrix.archive-name }}
-        tag_name: continuous
-        
-    - if: startsWith(github.ref, 'refs/tags/')
-      name: Tagged release
-      uses: softprops/action-gh-release@v1
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
       with:
         files: archive/${{ matrix.archive-name }}
-        name: Release build (${{ github.ref_name }})
+        tag_name: ${{ (github.ref_type == 'branch') && 'latest' || github.ref_name }}
+        name: ${{ (github.ref_type == 'branch') && 'Latest build' || 'Release build' }} ${{ github.ref_name }}
