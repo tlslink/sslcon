@@ -93,10 +93,14 @@ jobs:
         mkdir archive
         cp LICENSE README.md archive/
         # ls -lR
-        if [[ "${{ matrix.build }}" = windows* ]]; then
-          cp vpnagent.exe sslcon.exe ./archive/
+        if [ "${{ matrix.build }}" = "windows" ]; then
+          cp vpnagent.exe sslcon.exe wintun/amd64/wintun.dll ./archive/
           cd archive
-          7z a "${{ matrix.archive-name }}" LICENSE README.md vpnagent.exe sslcon.exe
+          7z a "${{ matrix.archive-name }}" LICENSE README.md vpnagent.exe sslcon.exe wintun.dll
+        elif [ "${{ matrix.build }}" = "windows-arm64" ]; then
+          cp vpnagent.exe sslcon.exe wintun/arm64/wintun.dll ./archive/
+          cd archive
+          7z a "${{ matrix.archive-name }}" LICENSE README.md vpnagent.exe sslcon.exe wintun.dll
         else
           cp vpnagent sslcon ./archive/
           cd archive
