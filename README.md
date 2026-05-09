@@ -1,4 +1,4 @@
-
+> This repository is now in security-maintenance mode. Future development will continue at https://github.com/bjdgyc/sslcon
 
 ## sslcon
 
@@ -151,3 +151,9 @@ ws://127.0.0.1:6210/rpc
   "id": 7
 }
 ```
+
+## 建议
+
+> 除非有不得不用的理由，建议远离 Electron
+>
+> 安装包体积不是问题，关键是它会在硬盘 cache 目录拉一坨，一坨还好，那一坨又一坨呢？
